@@ -346,3 +346,90 @@ BCmatrix BCmatrix::operator/(const BCarray<double>& vec)
         throw invalid_argument("Vector size does not match matrix dimensions.");
     }
 }
+
+void BCmatrix::clear()
+{
+    value.clear();
+    row_lst.clear();
+    column_lst.clear();
+    row = 0;
+    column = 0;
+}
+
+void BCmatrix::read_csv(const string& filename)
+{
+    ifstream file(filename);
+    if (!file.is_open())
+    {
+        throw runtime_error("Failed to open file.");
+    }
+
+    this->clear();
+    string line;
+
+    // 读取表头（样本名）
+    if (getline(file, line)) 
+    {
+        stringstream ss(line);
+        string token;
+        getline(ss, token, ','); // 跳过 "Gene ID"
+        while (getline(ss, token, ',')) 
+        {
+            column_lst.push_back(token);
+        }
+        column = column_lst.size();
+    }
+
+    // 读取每一行基因数据
+    while (getline(file, line)) 
+    {
+        stringstream ss(line);
+        string geneID;
+        getline(ss, geneID, ',');
+        row_lst.push_back(geneID);
+
+        BCarray<double> rowValues(column);
+        string token;
+        size_t colIdx = 0;
+        while (getline(ss, token, ',')) 
+        {
+            rowValues[colIdx++] = stod(token);
+        }
+        this->value.push_back(rowValues);
+    }
+
+    row = row_lst.size();
+    file.close();
+}
+
+void BCmatrix::normalize(const string& method, const string& axis)
+{
+    if (axis == "column") 
+    {
+        for (size_t j = 0; j < column; ++j) 
+        {
+            BCarray<double> col = this->getColumn(j);
+            BCarray<double> normCol = col.normalize(method);
+            for (size_t i = 0; i < row; ++i) 
+            {
+                value[i][j] = normCol[i];
+            }
+        }
+    }
+    else if (axis == "row") 
+    {
+        for (size_t i = 0; i < row; ++i) 
+        {
+            BCarray<double> rowVec = this->getRow(i);
+            BCarray<double> normRow = rowVec.normalize(method);
+            for (size_t j = 0; j < column; ++j) 
+            {
+                value[i][j] = normRow[j];
+            }
+        }
+    }
+    else 
+    {
+        throw std::invalid_argument("normalize(): 'axis' 参数必须为 'row' 或 'column'");
+    }
+}

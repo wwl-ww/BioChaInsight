@@ -7,6 +7,8 @@
 using namespace std;
 # include<vector>
 # include"BCarray.h"
+# include <fstream>
+# include <sstream>
 
 class BCmatrix
 {
@@ -84,6 +86,11 @@ public:
     BCmatrix operator-(const BCarray<double>& vec);
     BCmatrix operator*(const BCarray<double>& vec);
     BCmatrix operator/(const BCarray<double>& vec);
+
+    void clear();
+    void read_csv(const string& filename);
+
+    void normalize(const string& method="zscore", const string& axis="column");
 };
 
 # endif 
