@@ -16,14 +16,22 @@ using namespace std;
 template <typename T>
 class BCarray : public vector<T>
 {
+private:
+	bool is_row_vector = true;  // 是否是行向量
+
 public:
     // 构造函数
-    BCarray(const vector<T>& vec) : vector<T>(vec) {}
+    BCarray(const vector<T>& vec, bool is_row_vector = true) : vector<T>(vec), is_row_vector(is_row_vector){}
 
-    BCarray(T array[], size_t size)
+	BCarray(size_t count, const T& value = T(), bool is_row_vector = true) : vector<T>(count, value), is_row_vector(is_row_vector) {}
+
+    BCarray(T array[], size_t size, bool is_row_vector = true)
     {
         this->assign(array, array + size);
+		this->is_row_vector = is_row_vector;
     }
+
+    bool isRowVector() const;
 
     /*统计函数*/
    // 检查是否有重复值
@@ -36,6 +44,8 @@ public:
     T min() const;
     // 计算均值
     double mean() const;
+    // 计算范数
+    double norm(int ord = 2) const;
     // 计算中位数
     T median() const;
     // 总体方差
@@ -92,10 +102,30 @@ public:
     void sort_(bool ascending = true);
     // 内积
     T dot(const BCarray<T>& vec);
+    // 转置。一般都是行向量，显示的.T()就会是列向量
+	BCarray<T> t() const;
+
+    // 各种标准化
+    BCarray<T> L2Normalize() const;
+    BCarray<T> minMaxNormalize() const;
+    BCarray<T> zScoreNormalize() const;
+    BCarray<T> centralize() const;
+    BCarray<T> normalize(string method = "L2") const;
+
+    void L2Normalize_();
+    void minMaxNormalize_();
+    void zScoreNormalize_();
+    void centralize_();
+    void normalize_(string method = "L2");
 };
 
 
 // 实现
+template <typename T>
+bool BCarray<T>::isRowVector() const
+{
+    return is_row_vector;
+}
 
 template <typename T>
 bool BCarray<T>::hasDuplicates() const
@@ -125,6 +155,12 @@ template <typename T>
 double BCarray<T>::mean() const
 {
     return StatTools::mean(*this);
+}
+
+template <typename T>
+double BCarray<T>::norm(int ord) const
+{
+    return StatTools::norm(*this, ord);
 }
 
 template <typename T>
@@ -443,6 +479,157 @@ template <typename T>
 T BCarray<T>::dot(const BCarray<T>& vec)
 {
     return (*this * vec).sum();
+}
+
+template <typename T>
+BCarray<T> BCarray<T>::t() const
+{
+	BCarray<T> result(*this);
+	result.is_row_vector = !this->is_row_vector;
+	return result;
+}
+
+template <typename T>
+BCarray<T> BCarray<T>::L2Normalize() const
+{
+    double normValue = this->norm(2);
+    if (normValue == 0)
+    {
+        throw std::runtime_error("Cannot normalize a zero vector.");
+    }
+    BCarray<T> result(*this);
+    result = result / normValue;
+    return result;
+}
+
+template <typename T>
+BCarray<T> BCarray<T>::minMaxNormalize() const
+{
+    T minValue = this->min();
+    T maxValue = this->max();
+    if (maxValue == minValue)
+    {
+        throw std::runtime_error("Cannot normalize a vector with all identical values.");
+    }
+    BCarray<T> result(*this);
+    result = (result - minValue) / (maxValue - minValue);
+    return result;
+}
+
+template <typename T>
+BCarray<T> BCarray<T>::zScoreNormalize() const
+{
+    double meanValue = this->mean();
+    double stdValue = this->std();
+    if (stdValue == 0)
+    {
+        throw std::runtime_error("Cannot normalize a vector with zero standard deviation.");
+    }
+    BCarray<T> result(*this);
+    result = (result - meanValue) / stdValue;
+    return result;
+}
+
+template <typename T>
+BCarray<T> BCarray<T>::centralize() const
+{
+    double meanValue = this->mean();
+    BCarray<T> result(*this);
+    result = result - meanValue;
+    return result;
+}
+
+
+template <typename T>
+BCarray<T> BCarray<T>::normalize(string method) const
+{
+    if (method == "L2")
+    {
+        return this->L2Normalize();
+    }
+    else if (method == "minmax")
+    {
+        return this->minMaxNormalize();
+    }
+    else if (method == "zscore")
+    {
+        return this->zScoreNormalize();
+    }
+    else if (method == "centralize")
+    {
+        return this->centralize();
+    }
+    else
+    {
+        throw std::invalid_argument("only L2, minmax, and zscore are supported.");
+    }
+}
+
+template <typename T>
+void BCarray<T>::L2Normalize_()
+{
+    double normValue = this->norm(2);
+    if (normValue == 0)
+    {
+        throw std::runtime_error("Cannot normalize a zero vector.");
+    }
+    *this = *this / normValue;
+}
+
+template <typename T>
+void BCarray<T>::minMaxNormalize_()
+{
+    T minValue = this->min();
+    T maxValue = this->max();
+    if (maxValue == minValue)
+    {
+        throw std::runtime_error("Cannot normalize a vector with all identical values.");
+    }
+    *this = (*this - minValue) / (maxValue - minValue);
+}
+
+template <typename T>
+void BCarray<T>::zScoreNormalize_()
+{
+    double meanValue = this->mean();
+    double stdValue = this->std();
+    if (stdValue == 0)
+    {
+        throw std::runtime_error("Cannot normalize a vector with zero standard deviation.");
+    }
+    *this = (*this - meanValue) / stdValue;
+}
+
+template <typename T>
+void BCarray<T>::centralize_()
+{
+    double meanValue = this->mean();
+    *this = *this - meanValue;
+}
+
+template <typename T>
+void BCarray<T>::normalize_(string method)
+{
+    if (method == "L2")
+    {
+        this->L2Normalize_();
+    }
+    else if (method == "minmax")
+    {
+        this->minMaxNormalize_();
+    }
+    else if (method == "zscore")
+    {
+        this->zScoreNormalize_();
+    }
+    else if (method == "centralize") 
+    {
+        this->centralize_();
+    }
+    else
+    {
+        throw std::invalid_argument("only L2, minmax, and zscore are supported.");
+    }
 }
 
 # endif
