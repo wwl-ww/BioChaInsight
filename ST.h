@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <map>
 #include<unordered_map>
+#include <boost/math/distributions/students_t.hpp>
 
 namespace StatTools
 {
@@ -23,7 +24,7 @@ namespace StatTools
      * @throws std::invalid_argument If the vector is empty.
      */
     template <typename T>
-    void checkVector(const std::vector<T>& vec)
+    inline void checkVector(const std::vector<T>& vec)
     {
         if (vec.empty())
         {
@@ -40,7 +41,7 @@ namespace StatTools
      * @return True if duplicates are found, false otherwise.
      */
     template <typename T>
-    bool hasDuplicates(const std::vector<T>& vec)
+    inline bool hasDuplicates(const std::vector<T>& vec)
     {
         return vec.size() != std::unordered_set<T>(vec.begin(), vec.end()).size();
     }
@@ -53,7 +54,7 @@ namespace StatTools
      * @return The sum of the elements.
      */
     template <typename T>
-    T sum(const std::vector<T>& vec)
+    inline T sum(const std::vector<T>& vec)
     {
         checkVector(vec);
         return std::accumulate(vec.begin(), vec.end(), T{});
@@ -67,7 +68,7 @@ namespace StatTools
      * @return The maximum value.
      */
     template <typename T>
-    T max(const std::vector<T>& vec)
+    inline T max(const std::vector<T>& vec)
     {
         checkVector(vec);
         return *std::max_element(vec.begin(), vec.end());
@@ -81,7 +82,7 @@ namespace StatTools
      * @return The minimum value.
      */
     template <typename T>
-    T min(const std::vector<T>& vec)
+    inline T min(const std::vector<T>& vec)
     {
         checkVector(vec);
         return *std::min_element(vec.begin(), vec.end());
@@ -95,7 +96,7 @@ namespace StatTools
      * @return The mean value as a double.
      */
     template <typename T>
-    double mean(const std::vector<T>& vec)
+    inline double mean(const std::vector<T>& vec)
     {
         checkVector(vec);
         return static_cast<double>(sum<T>(vec)) / vec.size();
@@ -110,7 +111,7 @@ namespace StatTools
      * @return The Euclidean norm as a double.
      */
     template <typename T>
-    double norm(const std::vector<T>& vec)
+    inline double norm(const std::vector<T>& vec)
     {
         checkVector(vec);
         double sumOfSquares = 0.0;
@@ -133,7 +134,7 @@ namespace StatTools
      * @return The p-norm as a double.
      */
     template <typename T>
-    double norm(const std::vector<T>& vec, int ord)
+    inline double norm(const std::vector<T>& vec, int ord)
     {
         checkVector(vec);
         if (ord <= 0)
@@ -175,7 +176,7 @@ namespace StatTools
      * @return The median value.
      */
     template <typename T>
-    T median(const std::vector<T>& vec)
+    inline T median(const std::vector<T>& vec)
     {
         checkVector(vec);
         std::vector<T> sortedVec(vec);
@@ -199,7 +200,7 @@ namespace StatTools
      * @return The population variance.
      */
     template <typename T>
-    double populationVar(const std::vector<T>& vec)
+    inline double populationVar(const std::vector<T>& vec)
     {
         checkVector(vec);
         double meanVal = mean(vec);
@@ -219,7 +220,7 @@ namespace StatTools
      * @return The sample variance.
      */
     template <typename T>
-    double sampleVar(const std::vector<T>& vec)
+    inline double sampleVar(const std::vector<T>& vec)
     {
         checkVector(vec);
         double meanVal = mean(vec);
@@ -240,7 +241,7 @@ namespace StatTools
      * @return The variance.
      */
     template <typename T>
-    double var(const std::vector<T>& vec, bool isSample = false)
+    inline double var(const std::vector<T>& vec, bool isSample = false)
     {
         return isSample ? sampleVar(vec) : populationVar(vec);
     }
@@ -253,7 +254,7 @@ namespace StatTools
      * @return The population standard deviation.
      */
     template <typename T>
-    double populationStd(const std::vector<T>& vec)
+    inline double populationStd(const std::vector<T>& vec)
     {
         return std::sqrt(populationVar(vec));
     }
@@ -266,7 +267,7 @@ namespace StatTools
      * @return The sample standard deviation.
      */
     template <typename T>
-    double sampleStd(const std::vector<T>& vec)
+    inline double sampleStd(const std::vector<T>& vec)
     {
         return std::sqrt(sampleVar(vec));
     }
@@ -280,7 +281,7 @@ namespace StatTools
      * @return The standard deviation.
      */
     template <typename T>
-    double std(const std::vector<T>& vec, bool isSample = false)
+    inline double std(const std::vector<T>& vec, bool isSample = false)
     {
         return std::sqrt(var(vec, isSample));
     }
@@ -293,7 +294,7 @@ namespace StatTools
      * @return The skewness.
      */
     template <typename T>
-    double skewness(const std::vector<T>& vec)
+    inline double skewness(const std::vector<T>& vec)
     {
         checkVector(vec);
         if (vec.size() < 3)
@@ -318,7 +319,7 @@ namespace StatTools
      * @return The kurtosis.
      */
     template <typename T>
-    double kurtosis(const std::vector<T>& vec)
+    inline double kurtosis(const std::vector<T>& vec)
     {
         checkVector(vec);
         if (vec.size() < 4)
@@ -344,7 +345,7 @@ namespace StatTools
      * @return The percentile value.
      */
     template <typename T>
-    double percentile(const std::vector<T>& vec, double p)
+    inline double percentile(const std::vector<T>& vec, double p)
     {
         checkVector(vec);
         if (p < 0 || p > 1)
@@ -365,7 +366,7 @@ namespace StatTools
      * @return The mode value.
      */
     template <typename T>
-    T mode(const std::vector<T>& vec)
+    inline T mode(const std::vector<T>& vec)
     {
         checkVector(vec);
         std::unordered_map<T, int> freqMap;
@@ -396,7 +397,7 @@ namespace StatTools
      * @return The covariance.
      */
     template <typename T>
-    double covariance(const std::vector<T>& vec1, const std::vector<T>& vec2, bool isSample = false) {
+    inline double covariance(const std::vector<T>& vec1, const std::vector<T>& vec2, bool isSample = false) {
         if (vec1.size() != vec2.size())
         {
             throw std::invalid_argument("Vectors must be of the same size");
@@ -422,10 +423,79 @@ namespace StatTools
      * @return The correlation coefficient.
      */
     template <typename T>
-    double correlation(const std::vector<T>& vec1, const std::vector<T>& vec2)
+    inline double correlation(const std::vector<T>& vec1, const std::vector<T>& vec2)
     {
         return covariance(vec1, vec2) / (std(vec1) * std(vec2));
     }
+
+    struct t_testResult
+    {
+        double t;
+        double p_value;
+        double log2_fc;
+    };
+
+    /**
+     * Performs a two-sample t-test on two vectors.
+     * 
+     * @tparam T The type of elements in the vectors.
+     * @param vec1 The first vector.
+     * @param vec2 The second vector.
+     * @return A t_testResult object containing the t-statistic, p-value, and log2 fold change.
+     */
+    template <typename T>
+    inline t_testResult t_test(const std::vector<T>& vec1, const std::vector<T>& vec2, bool log2_data = true)
+    {
+        // 计算t统计量
+        double m1 = mean(vec1);
+        double m2 = mean(vec2);
+        double s1 = var(vec1, true)/vec1.size();
+        double s2 = var(vec2, true)/vec2.size();
+
+        // 计算log2 fold change
+        double log2_fc = 0;
+        if(log2_data)
+            // 数据已经经过了log2处理，所以直接相减即可
+            log2_fc = m1 - m2;
+        else
+            log2_fc = std::log2(m1/m2);
+        
+        // 计算t值和自由度
+        double t = (m1 - m2) / std::sqrt(s1 + s2);
+        double df = std::pow(s1 + s2, 2) / (std::pow(s1, 2) / (vec1.size() - 1) + std::pow(s2, 2) / (vec2.size() - 1));
+
+        boost::math::students_t dist(df);
+        double p = 2 * boost::math::cdf(boost::math::complement(dist, std::abs(t)));
+
+        return {t, p, log2_fc};
+    }
+
+    /**
+     * Adjusts the false discovery rate (FDR) of a set of p-values using the Benjamini-Hochberg method.
+     * 
+     * @param p_values A vector of p-values to be adjusted.
+     * @return A vector of adjusted p-values.
+     */
+    inline std::vector<double> adjust_fdr(std::vector<double> p_values)
+    {
+        size_t n = p_values.size();
+        std::vector<std::pair<double, int>> pv_with_index;
+        for (size_t i = 0; i < n; ++i) 
+            pv_with_index.push_back({p_values[i], i});
+        std::sort(pv_with_index.begin(), pv_with_index.end());
+    
+        std::vector<double> q_values(n);
+        double prev_q = 1.0;
+        for (int i = n - 1; i >= 0; --i) 
+        {
+            double unadjusted = pv_with_index[i].first * n / (i + 1);
+            double q = std::min(unadjusted, prev_q);
+            q_values[pv_with_index[i].second] = q;
+            prev_q = q;
+        }
+        return q_values;
+    }
+    
 }
 
 #endif 
