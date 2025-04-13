@@ -1,4 +1,5 @@
 #include "BCmatrix.h"
+#include "ST.h"
 
 void BCmatrix::_checkRowEqual(int size) const
 {
@@ -32,23 +33,43 @@ void BCmatrix::_checkColumnRange(int index) const
     }
 }
 
-BCmatrix::BCmatrix(){}
+BCmatrix::BCmatrix() {}
 
 BCmatrix::BCmatrix(size_t row, size_t column) : row(row), column(column), value(row, BCarray<double>(column, 0)) {}
 
-int BCmatrix::getRowCount() const 
-{ 
-    return row; 
+vector<BCarray<double>> BCmatrix::getValue() const
+{
+    return value;
 }
 
-int BCmatrix::getColumnCount() const 
-{ 
-    return column; 
+vector<int> BCmatrix::getGroup() const
+{
+    return group;
 }
 
-pair<int, int> BCmatrix::getShape() const 
-{ 
-    return make_pair(row, column); 
+int BCmatrix::getRowCount() const
+{
+    return row;
+}
+
+int BCmatrix::getColumnCount() const
+{
+    return column;
+}
+
+pair<int, int> BCmatrix::getShape() const
+{
+    return make_pair(row, column);
+}
+
+vector<string> BCmatrix::getRowName() const
+{
+    return row_lst;
+}
+
+vector<string> BCmatrix::getColumnName() const
+{
+    return column_lst;
 }
 
 BCarray<double> BCmatrix::getRow(size_t row) const
@@ -68,7 +89,7 @@ BCarray<double> BCmatrix::getColumn(size_t column) const
     return col;
 }
 
-double& BCmatrix::iloc(size_t row, size_t column)
+double &BCmatrix::iloc(size_t row, size_t column)
 {
     _checkRowRange(row);
     _checkColumnRange(column);
@@ -106,7 +127,7 @@ int BCmatrix::findColumn(string columnName) const
     return -1;
 }
 
-double& BCmatrix::loc(string rowName, string columnName)
+double &BCmatrix::loc(string rowName, string columnName)
 {
     int rowIndex = findRow(rowName);
     int columnIndex = findColumn(columnName);
@@ -128,7 +149,7 @@ double BCmatrix::loc(string rowName, string columnName) const
     return value[rowIndex][columnIndex];
 }
 
-double& BCmatrix::operator()(size_t row, size_t column)
+double &BCmatrix::operator()(size_t row, size_t column)
 {
     return iloc(row, column);
 }
@@ -138,7 +159,7 @@ double BCmatrix::operator()(size_t row, size_t column) const
     return iloc(row, column);
 }
 
-double& BCmatrix::operator()(string rowName, string columnName)
+double &BCmatrix::operator()(string rowName, string columnName)
 {
     return loc(rowName, columnName);
 }
@@ -221,7 +242,7 @@ void BCmatrix::deleteColumn(size_t index)
     --column;
 }
 
-void BCmatrix::addRow(const BCarray<double>& newRow, string name)
+void BCmatrix::addRow(const BCarray<double> &newRow, string name)
 {
     _checkColumnEqual(newRow.size());
     value.push_back(newRow);
@@ -229,7 +250,7 @@ void BCmatrix::addRow(const BCarray<double>& newRow, string name)
     ++row;
 }
 
-void BCmatrix::addColumn(const BCarray<double>& newColumn, string name)
+void BCmatrix::addColumn(const BCarray<double> &newColumn, string name)
 {
     _checkRowEqual(newColumn.size());
     for (size_t i = 0; i < row; ++i)
@@ -241,7 +262,7 @@ void BCmatrix::addColumn(const BCarray<double>& newColumn, string name)
 }
 
 // 实现和标量的四则运算
-BCmatrix BCmatrix::operator+(const double& scalar)
+BCmatrix BCmatrix::operator+(const double &scalar)
 {
     BCmatrix result(*this);
     for (size_t i = 0; i < row; ++i)
@@ -250,12 +271,12 @@ BCmatrix BCmatrix::operator+(const double& scalar)
     return result;
 }
 
-BCmatrix BCmatrix::operator-(const double& scalar)
+BCmatrix BCmatrix::operator-(const double &scalar)
 {
     return operator+(-scalar);
 }
 
-BCmatrix BCmatrix::operator*(const double& scalar)
+BCmatrix BCmatrix::operator*(const double &scalar)
 {
     BCmatrix result(*this);
     for (size_t i = 0; i < row; ++i)
@@ -264,13 +285,13 @@ BCmatrix BCmatrix::operator*(const double& scalar)
     return result;
 }
 
-BCmatrix BCmatrix::operator/(const double& scalar)
+BCmatrix BCmatrix::operator/(const double &scalar)
 {
     return operator*(1.0 / scalar);
 }
 
 // 实现和向量的四则运算（注意行向量和列向量）
-BCmatrix BCmatrix::operator+(const BCarray<double>& vec)
+BCmatrix BCmatrix::operator+(const BCarray<double> &vec)
 {
     if (vec.isRowVector() && vec.size() == column)
     {
@@ -294,12 +315,12 @@ BCmatrix BCmatrix::operator+(const BCarray<double>& vec)
     }
 }
 
-BCmatrix BCmatrix::operator-(const BCarray<double>& vec)
+BCmatrix BCmatrix::operator-(const BCarray<double> &vec)
 {
     return operator+(vec * -1);
 }
 
-BCmatrix BCmatrix::operator*(const BCarray<double>& vec)
+BCmatrix BCmatrix::operator*(const BCarray<double> &vec)
 {
     if (vec.isRowVector() && vec.size() == column)
     {
@@ -323,7 +344,7 @@ BCmatrix BCmatrix::operator*(const BCarray<double>& vec)
     }
 }
 
-BCmatrix BCmatrix::operator/(const BCarray<double>& vec)
+BCmatrix BCmatrix::operator/(const BCarray<double> &vec)
 {
     if (vec.isRowVector() && vec.size() == column)
     {
@@ -356,7 +377,7 @@ void BCmatrix::clear()
     column = 0;
 }
 
-void BCmatrix::read_csv(const string& filename)
+void BCmatrix::load_data(const string &filename)
 {
     ifstream file(filename);
     if (!file.is_open())
@@ -368,12 +389,12 @@ void BCmatrix::read_csv(const string& filename)
     string line;
 
     // 读取表头（样本名）
-    if (getline(file, line)) 
+    if (getline(file, line))
     {
         stringstream ss(line);
         string token;
         getline(ss, token, ','); // 跳过 "Gene ID"
-        while (getline(ss, token, ',')) 
+        while (getline(ss, token, ','))
         {
             column_lst.push_back(token);
         }
@@ -381,7 +402,7 @@ void BCmatrix::read_csv(const string& filename)
     }
 
     // 读取每一行基因数据
-    while (getline(file, line)) 
+    while (getline(file, line))
     {
         stringstream ss(line);
         string geneID;
@@ -391,7 +412,7 @@ void BCmatrix::read_csv(const string& filename)
         BCarray<double> rowValues(column);
         string token;
         size_t colIdx = 0;
-        while (getline(ss, token, ',')) 
+        while (getline(ss, token, ','))
         {
             rowValues[colIdx++] = stod(token);
         }
@@ -402,34 +423,109 @@ void BCmatrix::read_csv(const string& filename)
     file.close();
 }
 
-void BCmatrix::normalize(const string& method, const string& axis)
+void BCmatrix::load_group(const string &filename)
 {
-    if (axis == "column") 
+    ifstream file(filename);
+    if (!file.is_open())
     {
-        for (size_t j = 0; j < column; ++j) 
+        throw runtime_error("Failed to open file.");
+    }
+
+    this->group.clear();
+    string line;
+
+    getline(file, line); // 跳过表头id
+    while (getline(file, line))
+    {
+        group.push_back(stoi(line));
+    }
+
+    // 检查group数是否与列数一致
+    if (group.size() != column)
+    {
+        cout << "group size:  " << group.size() << endl;
+        cout << "column size: " << column << endl;
+        throw runtime_error("group size does not match column size.\n group size:  " + to_string(group.size()) + "\ncolumn size: " + to_string(column));
+    }
+    file.close();
+}
+
+void BCmatrix::to_csv(const string &filename) const
+{
+    ofstream out(filename);
+    if (!out.is_open())
+        throw runtime_error("Unable to open file for writing: " + filename);
+
+    out << "Gene";
+    for (const auto &sample_name : column_lst)
+        out << "," << sample_name;
+    out << "\n";
+
+    for (size_t i = 0; i < row; ++i)
+    {
+        out << row_lst[i];
+        for (size_t j = 0; j < column; ++j)
+            out << "," << setprecision(6) << value[i][j];
+        out << "\n";
+    }
+
+    out.close();
+}
+
+void BCmatrix::normalize(const string &method, const string &axis)
+{
+    if (axis == "column")
+    {
+        for (size_t j = 0; j < column; ++j)
         {
             BCarray<double> col = this->getColumn(j);
             BCarray<double> normCol = col.normalize(method);
-            for (size_t i = 0; i < row; ++i) 
+            for (size_t i = 0; i < row; ++i)
             {
                 value[i][j] = normCol[i];
             }
         }
     }
-    else if (axis == "row") 
+    else if (axis == "row")
     {
-        for (size_t i = 0; i < row; ++i) 
+        for (size_t i = 0; i < row; ++i)
         {
             BCarray<double> rowVec = this->getRow(i);
             BCarray<double> normRow = rowVec.normalize(method);
-            for (size_t j = 0; j < column; ++j) 
+            for (size_t j = 0; j < column; ++j)
             {
                 value[i][j] = normRow[j];
             }
         }
     }
-    else 
+    else
     {
-        throw std::invalid_argument("normalize(): 'axis' 参数必须为 'row' 或 'column'");
+        throw invalid_argument("normalize(): 'axis' 参数必须为 'row' 或 'column'");
     }
+}
+
+BCmatrix BCmatrix::t_test()
+{
+    BCmatrix result;
+    result.column = 3;
+    result.column_lst = {"log2_fc", "t", "p_value"};
+    result.group = group;
+
+    // 1. 每一行分实验组和对照组，进行t检验
+    for (size_t i = 0; i < row; ++i)
+    {
+        BCarray<double> rowData = this->getRow(i);
+        pair<BCarray<double>, BCarray<double>> splitData = rowData.split(group);
+        StatTools::t_testResult t_testResult = StatTools::t_test(splitData.first, splitData.second);
+
+        vector<double> res = { t_testResult.log2_fc, t_testResult.t, t_testResult.p_value };
+        BCarray<double> rowResult(res);
+        result.addRow(rowResult, row_lst[i]);
+    }
+
+    // 2. 进行FDR调整
+    BCarray<double> fdr_p_values = StatTools::adjust_fdr(result.getColumn(2));
+    result.addColumn(fdr_p_values, "fdr_p_value");
+
+    return result;
 }
