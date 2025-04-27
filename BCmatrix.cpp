@@ -529,3 +529,18 @@ BCmatrix BCmatrix::t_test()
 
     return result;
 }
+
+std::vector<std::vector<double>> BCmatrix::values() const 
+{
+    std::vector<std::vector<double>> matrix(row);  
+
+    for (size_t i = 0; i < row; ++i) 
+    {
+        matrix[i].resize(column);  
+        for (size_t j = 0; j < column; ++j) {
+            matrix[i][j] = value[i][j];  
+        }
+    }
+
+    return matrix;
+}

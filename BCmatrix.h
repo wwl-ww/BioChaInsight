@@ -102,6 +102,7 @@ public:
     void load_group(const string &filename);
     // 导出数据
     void to_csv(const string &filename) const;
+    std::vector<std::vector<double>> values() const;
 
     // 数据归一化
     void normalize(const string &method = "zscore", const string &axis = "column");
