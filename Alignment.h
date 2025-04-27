@@ -6,6 +6,7 @@
 #include <iostream>
 using namespace std;
 #include<vector>
+#include<math.h>
 
 class Alignment
 {
@@ -23,6 +24,15 @@ public:
 
 	// Smith-WatermanÀ„∑®
     pair<string, string> smithWaterman(const string& seq1, const string& seq2);
+
+    // GotohÀ„∑®
+    pair<string, string> gotoh(const string& seq1, const string& seq2);
+
+    // HirschbergÀ„∑®
+    pair<string, string> hirschberg(const string& seq1, const string& seq2);
+    pair<string, string> hirschbergRecursive(const string& seq1, const string& seq2);
+    vector<int> nwScore(const string& seq1, const string& seq2);
+    string reverse(const string& str);
 };
 
 #endif
