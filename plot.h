@@ -2,6 +2,7 @@
 #ifndef PLOT_H
 #define PLOT_H
 
+#include "ST.h"
 #include "matplotlibcpp.h"
 #include <cmath>
 #include <vector>
@@ -11,7 +12,7 @@ using namespace std;
 
 namespace plt = matplotlibcpp;
 
-bool init_python(const string &python_home = "D:/anaconda");
+bool init_python(const string& python_home = "D:/anaconda");
 
 namespace GenePlot
 {
@@ -25,9 +26,9 @@ namespace GenePlot
      * @param pval_thresh   p 值阈值（例如 0.05 表示 5% 显著性水平，默认是0.05）
      */
     void volcano(
-        const vector<double> &log2fc,
-        const vector<double> &pvals,
-        const vector<string> &genes = {}, // 这个之后再实现
+        const vector<double>& log2fc,
+        const vector<double>& pvals,
+        const vector<string>& genes = {}, // 这个之后再实现
         double fc_thresh = 1.0,
         double pval_thresh = 0.05);
 
@@ -59,14 +60,89 @@ namespace GenePlot
      * @param k K-means 聚类的簇数，函数将数据划分为 `k` 个簇。
      * @param pca_components PCA 降维后保留的主成分数量，默认值为 2，适用于二维可视化。
      *
-     * @throws std::invalid_argument 如果簇数 `k` 小于 1，或者输入数据为空。
+     * @throws invalid_argument 如果簇数 `k` 小于 1，或者输入数据为空。
      *
      * @note 该函数假定输入数据适合进行 PCA（即数据是数值型且格式正确）。
      */
     void plotPCAWithKMeans(
-        const std::vector<std::vector<double>> &data,
+        const vector<vector<double>>& data,
         int k,
         int pca_components = 2);
+
+    /**
+     * @brief 绘制高斯核密度估计（KDE）曲线
+     * @param samples 输入的一维数据样本向量
+     * @param bandwidth 高斯核带宽（h），控制平滑程度
+     * @param grid_n 栅格点数量，决定在横轴区间上采样的点数
+     * @param width 图像画布宽度（像素）
+     * @param height 图像画布高度（像素）
+     */
+    void plotKDE(
+        const vector<double>& samples,
+        double bandwidth,
+        int grid_n = 200,
+        int width = 800,
+        int height = 600
+    );
+
+    /**
+     * @brief 在同一张图中绘制样本直方图和高斯核密度估计（KDE）曲线
+     * @param samples 输入的一维数据样本向量
+     * @param bandwidth 高斯核带宽（h），控制密度曲线的平滑程度
+     * @param bins 直方图柱子数量（默认 30）
+     * @param grid_n KDE 曲线采样点数（默认 200）
+     * @param width 图像画布宽度（像素，默认 800）
+     * @param height 图像画布高度（像素，默认 600）
+     */
+    void plotHistogramKDE(
+        const vector<double>& samples,
+        double bandwidth,
+        int bins = 30,
+        int grid_n = 200,
+        int width = 800,
+        int height = 600
+    );
+
+    /**
+     * @brief 传入两个向量，画出两条线
+     */
+    void plot_two_lines(
+        const vector<double>& y1, 
+        const vector<double>& y2,
+        int width = 800,
+        int height = 600
+    );
+
+    /**
+     * @brief 传入两个向量，一个作为x，一个作为y。同时画出y=x
+     */
+    void plot_two_xy(
+        const vector<double>& y1,
+        const vector<double>& y2,
+        int width = 800,
+        int height = 600
+    );
+
+    /**
+     * @brief 传入两个向量，在同一张图上画两个箱线图
+     */
+    void plot_two_boxplot(
+        const vector<double>& y1,
+        const vector<double>& y2,
+        int width = 800,
+        int height = 600
+    );
+
+    /**
+    * @brief 接收一个二维矩阵，绘制热力图
+    */
+    void plot_heatmap(
+        const vector<vector<double>>& matrix,
+        bool show_colorbar = true,
+        int width = 800,
+        int height = 600
+    );
+
 
 } // namespace GenePlot
 

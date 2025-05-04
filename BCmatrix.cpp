@@ -42,6 +42,19 @@ vector<BCarray<double>> BCmatrix::getValue() const
     return value;
 }
 
+vector<vector<double>> BCmatrix::getPureValue() const
+{
+    vector<vector<double>> res(row, vector<double>(column));
+    for (size_t i = 0; i < row; ++i)
+    {
+        for (size_t j = 0; j < column; ++j)
+        {
+            res[i][j] = value[i][j];
+        }
+    }
+    return res;
+}
+
 vector<int> BCmatrix::getGroup() const
 {
     return group;

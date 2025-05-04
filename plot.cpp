@@ -136,3 +136,212 @@ void GenePlot::plotPCAWithKMeans(
     plt::title("PCA with K-means Clustering");
     plt::legend(); // 显示图例
 }
+
+void GenePlot::plotKDE(
+    const std::vector<double>& samples,
+    double bandwidth,
+    int grid_n,
+    int width,
+    int height 
+) {
+    // Initialize Python interpreter and matplotlib backend
+    plt::detail::_interpreter::get();
+
+    // Compute grid range
+    double xmin = *std::min_element(samples.begin(), samples.end());
+    double xmax = *std::max_element(samples.begin(), samples.end());
+    double margin = 3 * bandwidth;
+    xmin -= margin;
+    xmax += margin;
+
+    // Build grid
+    std::vector<double> grid_x(grid_n);
+    for (int i = 0; i < grid_n; ++i) {
+        grid_x[i] = xmin + (xmax - xmin) * i / (grid_n - 1);
+    }
+
+    // Compute densities
+    auto densities = StatTools::computeKDE(samples, grid_x, bandwidth);
+
+    // Plot
+    plt::figure_size(width, height);
+    plt::plot(grid_x, densities);
+    plt::xlabel("Value");
+    plt::ylabel("Density");
+    plt::title("Kernel Density Estimation (Gaussian h=" + std::to_string(bandwidth) + ")");
+    plt::grid(true);
+    plt::show();
+}
+
+
+void GenePlot::plotHistogramKDE(
+    const std::vector<double>& samples,
+    double bandwidth,
+    int bins,
+    int grid_n,
+    int width,
+    int height
+) {
+    // 1) 初始化解释器（只需调用一次，放到 main() 里也行）
+    static auto& interp = plt::detail::_interpreter::get();
+
+    // 2) 画归一化直方图：named_hist 会自动归一化（area=1）并带标签
+    plt::figure_size(width, height);
+    plt::hist(
+        samples,         // 样本数据
+        bins,            // 柱子数
+        "grey",          // 颜色
+        0.5              // 透明度
+    );
+
+    // 3) 计算样本范围 + 三倍带宽的扩展区间
+    auto mm = std::minmax_element(samples.begin(), samples.end());
+    double xmin = *mm.first, xmax = *mm.second;
+    xmin -= 3 * bandwidth;
+    xmax += 3 * bandwidth;
+
+    // 4) 构建 grid_x
+    std::vector<double> grid_x(grid_n);
+    for (int i = 0; i < grid_n; ++i) {
+        grid_x[i] = xmin + (xmax - xmin) * i / (grid_n - 1);
+    }
+
+    // 5) 计算 KDE 密度
+    auto densities = StatTools::computeKDE(samples, grid_x, bandwidth);
+
+    plt::plot(grid_x, densities);
+
+    plt::xlabel("Value");
+    plt::ylabel("Density");
+    plt::title("Histogram with KDE");
+    plt::legend();
+    plt::grid(true);
+    plt::show();
+}
+
+void GenePlot::plot_two_lines(
+    const std::vector<double>& y1, 
+    const std::vector<double>& y2,
+    int width,
+    int height
+) {
+    if (y1.size() != y2.size()) {
+        throw std::runtime_error("两个向量长度不一致！");
+    }
+
+    std::vector<double> x(y1.size());
+    for (size_t i = 0; i < x.size(); ++i)
+        x[i] = i;  // 生成 x 坐标
+
+    plt::figure();
+    plt::plot(x, y1, "r-");
+    plt::plot(x, y2, "b-");
+
+    plt::legend();
+    plt::xlabel("Index");
+    plt::ylabel("Value");
+    plt::title("Two Line Plot");
+    plt::grid(true);
+    plt::show();  // 或 plt::save("output.png");
+}
+
+void GenePlot::plot_two_xy(
+    const std::vector<double>& y1,
+    const std::vector<double>& y2,
+    int width,
+    int height
+) {
+    if (y1.size() != y2.size()) {
+        throw std::runtime_error("x 和 y 向量长度不一致！");
+    }
+
+    plt::figure_size(width, height);
+
+    plt::scatter(y1, y2, 10.0);
+
+    // 找到所有点中的 min 和 max，用于对角线
+    double min_x, max_x, min_y, max_y;
+    min_x = StatTools::min(y1);
+    min_y = StatTools::min(y2);
+    max_x = StatTools::max(y1);
+    max_y = StatTools::max(y2);
+
+    double diag_min = std::min(min_x, min_y);
+    double diag_max = std::max(max_x, max_y);
+
+    std::vector<double> diag_x = { diag_min, diag_max };
+    std::vector<double> diag_y = { diag_min, diag_max };
+    plt::plot(diag_x, diag_y, { {"label", "y = x"}, {"color", "red"}, {"linestyle", "--"} });
+
+    // 装饰
+    plt::xlabel("X");
+    plt::ylabel("Y");
+    plt::title("Scatter Plot with y = x");
+    plt::legend();
+    plt::grid(true);
+    plt::show();
+}
+
+void GenePlot::plot_two_boxplot(
+    const std::vector<double>& y1,
+    const std::vector<double>& y2,
+    int width,
+    int height
+) {
+    plt::figure_size(width, height);
+
+    // 将两个数据列打包成 vector<vector<double>>
+    std::vector<std::vector<double>> all_data = { y1, y2 };
+
+    // 画箱线图
+    plt::boxplot(all_data);
+
+    // 添加标签
+    plt::xticks(std::vector<double>{1, 2}, std::vector<std::string>{"Group 1", "Group 2"});
+    plt::title("Boxplot of Two Groups");
+    plt::grid(true);
+    plt::show();  // 或 plt::save("boxplot.png");
+}
+
+void GenePlot::plot_heatmap(
+    const std::vector<std::vector<double>>& matrix,
+    bool show_colorbar ,
+    int width ,
+    int height 
+) {
+    // 初始化 Python（只调用一次）
+    static auto& interp = plt::detail::_interpreter::get();
+
+    if (matrix.empty() || matrix[0].empty()) {
+        throw std::invalid_argument("Input matrix is empty.");
+    }
+
+    int rows = matrix.size();
+    int cols = matrix[0].size();
+
+    // 检查所有行的长度一致
+    for (const auto& row : matrix) {
+        if (row.size() != cols) {
+            throw std::invalid_argument("All rows in the matrix must have the same number of columns.");
+        }
+    }
+
+    // 拉平为一维数组（按行优先）
+    std::vector<float> flat_data;
+    flat_data.reserve(rows * cols);
+    for (const auto& row : matrix) {
+        flat_data.insert(flat_data.end(), row.begin(), row.end());
+    }
+
+    // 画图：注意这里 colors=1 表示灰度图
+    PyObject* im = nullptr;
+    plt::imshow(flat_data.data(), rows, cols, 1, { {"cmap", "PiYG"} }, &im);
+
+    // 可选加 colorbar
+    if (show_colorbar && im != nullptr) {
+        plt::colorbar(im);
+    }
+
+    plt::title("Heatmap");
+    plt::show();
+}

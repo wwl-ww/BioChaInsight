@@ -34,6 +34,7 @@ public:
 
     // 得到value和group
     vector<BCarray<double>> getValue() const;
+    vector<vector<double>> getPureValue() const;
     vector<int> getGroup() const;
 
     // 获取行数和列数
