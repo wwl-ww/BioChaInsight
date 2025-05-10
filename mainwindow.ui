@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>577</width>
+    <height>333</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>240</x>
+      <y>80</y>
+      <width>181</width>
+      <height>81</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>BioChaInsight</string>
+    </property>
+    <property name="textFormat">
+     <enum>Qt::PlainText</enum>
+    </property>
+    <property name="scaledContents">
+     <bool>false</bool>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>577</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu1">
+    <property name="title">
+     <string>功能</string>
+    </property>
+    <addaction name="menu11"/>
+    <addaction name="separator"/>
+    <addaction name="menu12"/>
+    <addaction name="menu13"/>
+    <addaction name="separator"/>
+    <addaction name="menu14"/>
+    <addaction name="separator"/>
+    <addaction name="menu15"/>
+    <addaction name="menu16"/>
+   </widget>
+   <widget class="QMenu" name="menu2">
+    <property name="title">
+     <string>设置</string>
+    </property>
+    <addaction name="actioncolor"/>
+    <addaction name="actionfontc"/>
+    <addaction name="separator"/>
+    <addaction name="actionfont"/>
+   </widget>
+   <widget class="QMenu" name="menu3">
+    <property name="title">
+     <string>关于</string>
+    </property>
+    <addaction name="actionversion"/>
+    <addaction name="separator"/>
+    <addaction name="actioncontact"/>
+    <addaction name="actiontutorial"/>
+   </widget>
+   <addaction name="menu1"/>
+   <addaction name="menu2"/>
+   <addaction name="menu3"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QToolBar" name="toolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="menu11_2"/>
+   <addaction name="separator"/>
+   <addaction name="menu12_2"/>
+   <addaction name="separator"/>
+   <addaction name="menu13_2"/>
+   <addaction name="separator"/>
+   <addaction name="menu14_2"/>
+   <addaction name="separator"/>
+   <addaction name="menu15_2"/>
+   <addaction name="separator"/>
+   <addaction name="menu16_2"/>
+  </widget>
+  <action name="menu11">
+   <property name="text">
+    <string>序列比对</string>
+   </property>
+  </action>
+  <action name="menu12">
+   <property name="text">
+    <string>矩阵分析</string>
+   </property>
+  </action>
+  <action name="menu13">
+   <property name="text">
+    <string>基因表达对比</string>
+   </property>
+  </action>
+  <action name="menu14">
+   <property name="text">
+    <string>基因筛选</string>
+   </property>
+  </action>
+  <action name="menu15">
+   <property name="text">
+    <string>降维</string>
+   </property>
+  </action>
+  <action name="menu16">
+   <property name="text">
+    <string>聚类</string>
+   </property>
+  </action>
+  <action name="menu11_2">
+   <property name="text">
+    <string>序列比对</string>
+   </property>
+  </action>
+  <action name="menu12_2">
+   <property name="text">
+    <string>矩阵分析</string>
+   </property>
+  </action>
+  <action name="menu13_2">
+   <property name="text">
+    <string>基因表达对比</string>
+   </property>
+  </action>
+  <action name="menu14_2">
+   <property name="text">
+    <string>基因筛选</string>
+   </property>
+  </action>
+  <action name="menu15_2">
+   <property name="text">
+    <string>降维</string>
+   </property>
+  </action>
+  <action name="menu16_2">
+   <property name="text">
+    <string>聚类</string>
+   </property>
+  </action>
+  <action name="actionversion">
+   <property name="text">
+    <string>版本</string>
+   </property>
+  </action>
+  <action name="actioncontact">
+   <property name="text">
+    <string>联系我们</string>
+   </property>
+  </action>
+  <action name="actiontutorial">
+   <property name="text">
+    <string>教程</string>
+   </property>
+  </action>
+  <action name="actionfont">
+   <property name="text">
+    <string>字体</string>
+   </property>
+  </action>
+  <action name="actioncolor">
+   <property name="text">
+    <string>主题色</string>
+   </property>
+  </action>
+  <action name="actionfontc">
+   <property name="text">
+    <string>字体色</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
