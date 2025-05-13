@@ -7,15 +7,15 @@
 #include <iostream>
 #include <numeric>
 #include <vector>
-#include <numeric>
+#include <algorithm>
+#include <stdexcept>
 #include <cmath>
 #include <limits>
-#include <stdexcept>
 #include <cstdlib>
-#include <algorithm>
 #include <unordered_set>
 #include <map>
 #include <unordered_map>
+#include <functional>
 #include <boost/math/distributions/students_t.hpp>
 
 namespace StatTools
@@ -945,8 +945,8 @@ namespace StatTools
 
     /**
      * @brief Compute pairwise Euclidean distance matrix.
-     * @param data N×D matrix
-     * @return N×N symmetric matrix of distances
+     * @param data N*D matrix
+     * @return N*N symmetric matrix of distances
      */
     inline std::vector<std::vector<double>> computeDistanceMatrix(const std::vector<std::vector<double>>& data) {
         int N = data.size();
@@ -1062,6 +1062,361 @@ namespace StatTools
      * @param height figure height in pixels (default 600)
      */
     
+     /*
+     第五次扩展
+     t-SNE降维 LLE降维
+     */
+
+    /**
+     * @brief 对单行距离平方向量使用二分搜索确定局部高维相似度分布。
+     *
+     * @param dist2_row 长度为 n 的距离平方向量。
+     * @param target_perplexity 目标困惑度。
+     * @param max_iter 最大二分搜索迭代次数。
+     * @param tol 熵误差容限。
+     * @return 长度为 n 的概率分布 P(i|j)。
+     */
+    inline std::vector<double> binarySearchSigma(
+        const std::vector<double>& dist2_row,
+        double target_perplexity,
+        int max_iter = 50,
+        double tol = 1e-5
+    ) 
+    {
+        double beta_min = -INFINITY, beta_max = INFINITY;
+        double beta = 1.0;
+        size_t n = dist2_row.size();
+        std::vector<double> P(n);
+        for (int iter = 0; iter < max_iter; ++iter) {
+            double sumP = 0.0;
+            for (size_t j = 0; j < n; ++j) {
+                P[j] = std::exp(-dist2_row[j] * beta);
+                sumP += P[j];
+            }
+            double H = 0.0;
+            for (size_t j = 0; j < n; ++j) {
+                P[j] /= sumP;
+                if (P[j] > 1e-12) H -= P[j] * std::log(P[j]);
+            }
+            double perplexity = std::exp(H);
+            double diff = perplexity - target_perplexity;
+            if (std::fabs(diff) < tol) break;
+            if (diff > 0) {
+                beta_min = beta;
+                beta = (beta_max == INFINITY ? beta * 2 : 0.5 * (beta + beta_max));
+            }
+            else {
+                beta_max = beta;
+                beta = (beta_min == -INFINITY ? beta / 2 : 0.5 * (beta + beta_min));
+            }
+        }
+        return P;
+    }
+
+    /**
+     * @brief 计算高维空间的对称化相似度矩阵 P。
+     *
+     * 对于每个样本 i，先调用 binarySearchSigma 获得 P(i|j)，
+     * 然后对称化：P_{ij} = (P(i|j) + P(j|i)) / (2n)。
+     *
+     * @param dist2 n*n 的距离平方矩阵。
+     * @param perplexity 困惑度。
+     * @return n*n 的高维相似度矩阵 P。
+     */
+    inline std::vector<std::vector<double>> computeHighDimAffinities(
+        const std::vector<std::vector<double>>& dist2,
+        double perplexity
+    ) {
+        size_t n = dist2.size();
+        std::vector<std::vector<double>> P(n, std::vector<double>(n, 0.0));
+        for (size_t i = 0; i < n; ++i) {
+            auto Pi = binarySearchSigma(dist2[i], perplexity);
+            for (size_t j = 0; j < n; ++j) P[i][j] = Pi[j];
+        }
+        // 对称化并归一化
+        for (size_t i = 0; i < n; ++i) {
+            for (size_t j = i + 1; j < n; ++j) {
+                double val = (P[i][j] + P[j][i]) / (2.0 * n);
+                P[i][j] = P[j][i] = val;
+            }
+        }
+        return P;
+    }
+
+    /**
+     * @brief 计算低维空间的学生 t 分布相似度矩阵 Q。
+     *
+     * Q_{ij} = (1 + ||y_i - y_j||^2)^{-1}，然后整体除以总和。
+     *
+     * @param Y 低维坐标矩阵，大小 n*dim。
+     * @return n*n 的相似度矩阵 Q。
+     */
+    inline std::vector<std::vector<double>> computeLowDimAffinities(
+        const std::vector<std::vector<double>>& Y
+    ) {
+        size_t n = Y.size();
+        std::vector<std::vector<double>> Q(n, std::vector<double>(n, 0.0));
+        double sum = 0.0;
+        for (size_t i = 0; i < n; ++i) {
+            for (size_t j = i + 1; j < n; ++j) {
+                double dist2 = 0.0;
+                for (size_t d = 0; d < Y[i].size(); ++d) {
+                    double diff = Y[i][d] - Y[j][d];
+                    dist2 += diff * diff;
+                }
+                double inv = 1.0 / (1.0 + dist2);
+                Q[i][j] = Q[j][i] = inv;
+                sum += 2.0 * inv;
+            }
+            Q[i][i] = 0.0;
+        }
+        // 归一化
+        for (size_t i = 0; i < n; ++i)
+            for (size_t j = 0; j < n; ++j)
+                Q[i][j] /= sum;
+        return Q;
+    }
+
+    /**
+     * @brief 执行 t-SNE 降维。
+     *
+     * @param X 原始高维数据矩阵，大小 n*d。
+     * @param dim 目标降维维度，默认为 2。
+     * @param perplexity 困惑度参数。
+     * @param max_iter 最大迭代次数。
+     * @param lr 学习率。
+     * @return 降维后的坐标矩阵，大小 n*dim。
+     * @throws std::invalid_argument 如果输入数据为空。
+     */
+    inline std::vector<std::vector<double>> performTSNE(
+        const std::vector<std::vector<double>>& X,
+        int dim = 2,
+        double perplexity = 30.0,
+        int max_iter = 1000,
+        double lr = 200.0
+    ) {
+        if (X.empty()) {
+            throw std::invalid_argument("Input data X is empty.");
+        }
+        size_t n = X.size();
+
+        // 1. 调用已实现函数计算欧氏距离，再取平方
+        auto dist = computeDistanceMatrix(X);
+        std::vector<std::vector<double>> dist2(n, std::vector<double>(n, 0.0));
+        for (size_t i = 0; i < n; ++i) {
+            for (size_t j = 0; j < n; ++j) {
+                double d = dist[i][j];
+                dist2[i][j] = d * d;
+            }
+        }
+        auto P = computeHighDimAffinities(dist2, perplexity);
+
+        // 2. 随机初始化低维映射 Y
+        std::vector<std::vector<double>> Y(n, std::vector<double>(dim));
+        for (size_t i = 0; i < n; ++i)
+            for (int d = 0; d < dim; ++d)
+                Y[i][d] = (std::rand() / (double)RAND_MAX - 0.5) * 1e-4;
+
+        // 3. 初始化动量
+        std::vector<std::vector<double>> iY(n, std::vector<double>(dim, 0.0));
+        double momentum = 0.5;
+
+        // 4. 迭代优化
+        for (int iter = 0; iter < max_iter; ++iter) {
+            auto Q = computeLowDimAffinities(Y);
+            // 计算梯度
+            std::vector<std::vector<double>> grad(n, std::vector<double>(dim, 0.0));
+            for (size_t i = 0; i < n; ++i) {
+                for (size_t j = 0; j < n; ++j) {
+                    double mult = P[i][j] - Q[i][j];
+                    for (int d = 0; d < dim; ++d) {
+                        grad[i][d] += mult * (Y[i][d] - Y[j][d]);
+                    }
+                }
+            }
+            // 更新 Y
+            for (size_t i = 0; i < n; ++i) {
+                for (int d = 0; d < dim; ++d) {
+                    iY[i][d] = momentum * iY[i][d] - lr * grad[i][d];
+                    Y[i][d] += iY[i][d];
+                }
+            }
+            if (iter == 250) momentum = 0.8;
+        }
+
+        return Y;
+    }
+
+    /**
+     * @brief 转置矩阵
+     *
+     * @param A 原始矩阵，大小 rows*cols
+     * @return 转置矩阵，大小 cols*rows
+     */
+    inline std::vector<std::vector<double>> transposeMatrix(
+        const std::vector<std::vector<double>>& A
+    )
+    {
+        size_t rows = A.size();
+        size_t cols = A[0].size();
+        std::vector<std::vector<double>> At(cols, std::vector<double>(rows));
+        for (size_t i = 0; i < rows; ++i) {
+            for (size_t j = 0; j < cols; ++j) {
+                At[j][i] = A[i][j];
+            }
+        }
+        return At;
+    }
+
+    /**
+     * @brief 局部线性嵌入（LLE）降维算法
+     * @param X 输入数据矩阵，大小 n*d。
+     * @param n_neighbors 每个点的近邻数 k。
+     * @param dim 目标降维维度。
+     * @param reg 正则化系数，防止局部协方差矩阵奇异，默认为 1e-3。
+     * @return 大小 n*dim 的降维嵌入矩阵。
+     * @throws std::invalid_argument 若输入数据为空或参数不合法。
+     */
+    inline std::vector<std::vector<double>> performLLE(
+        const std::vector<std::vector<double>>& X,
+        int n_neighbors,
+        int dim,
+        double reg = 1e-3
+    ) 
+    {
+        if (X.empty() || n_neighbors <= 0 || dim <= 0) {
+            throw std::invalid_argument("Invalid input to performLLE");
+        }
+        size_t n = X.size();
+
+        // 1. 计算距离矩阵
+        std::vector<std::vector<double>> dist = computeDistanceMatrix(X);
+
+        // 2. 找到 k 个最近邻索引
+        std::vector<std::vector<int>> neighbors(n);
+        for (size_t i = 0; i < n; ++i) {
+            // 按距离排序前 k+1（包含自身）
+            std::vector<std::pair<double, int>> order;
+            order.reserve(n);
+            for (size_t j = 0; j < n; ++j) {
+                order.push_back(std::make_pair(dist[i][j], static_cast<int>(j)));
+            }
+            std::nth_element(order.begin(), order.begin() + n_neighbors,
+                order.end(),
+                std::bind(std::less<std::pair<double, int>>(),
+                    std::placeholders::_1,
+                    std::placeholders::_2));
+            neighbors[i].reserve(n_neighbors);
+            int count = 0;
+            for (size_t p = 0; p < order.size() && count < n_neighbors; ++p) {
+                int idx = order[p].second;
+                if (idx == static_cast<int>(i)) continue;
+                neighbors[i].push_back(idx);
+                ++count;
+            }
+        }
+
+        // 3. 计算重构权重 W
+        std::vector<std::vector<double>> W(n, std::vector<double>(n, 0.0));
+        for (size_t i = 0; i < n; ++i) {
+            // 构建局部协方差矩阵 C (k*k)
+            std::vector<std::vector<double>> C(n_neighbors,
+                std::vector<double>(n_neighbors, 0.0));
+            for (int a = 0; a < n_neighbors; ++a) {
+                for (int b = 0; b < n_neighbors; ++b) {
+                    double sum = 0.0;
+                    for (size_t d = 0; d < X[i].size(); ++d) {
+                        double da = X[i][d] - X[neighbors[i][a]][d];
+                        double db = X[i][d] - X[neighbors[i][b]][d];
+                        sum += da * db;
+                    }
+                    C[a][b] = sum;
+                }
+            }
+            // 正则化
+            double trace = 0.0;
+            for (int a = 0; a < n_neighbors; ++a) {
+                trace += C[a][a];
+            }
+            for (int a = 0; a < n_neighbors; ++a) {
+                C[a][a] += reg * trace;
+            }
+            // 求解线性系统 C w = 1
+            std::vector<double> ones(n_neighbors, 1.0);
+            // 高斯消元
+            for (int p = 0; p < n_neighbors; ++p) {
+                // 主元
+                int maxr = p;
+                for (int r = p + 1; r < n_neighbors; ++r) {
+                    if (std::fabs(C[r][p]) > std::fabs(C[maxr][p])) {
+                        maxr = r;
+                    }
+                }
+                std::swap(C[p], C[maxr]);
+                std::swap(ones[p], ones[maxr]);
+                double diag = C[p][p];
+                if (std::fabs(diag) < 1e-12) {
+                    throw std::runtime_error("Singular matrix in LLE weight solve");
+                }
+                for (int c = p; c < n_neighbors; ++c) {
+                    C[p][c] /= diag;
+                }
+                ones[p] /= diag;
+                for (int r = p + 1; r < n_neighbors; ++r) {
+                    double factor = C[r][p];
+                    for (int c = p; c < n_neighbors; ++c) {
+                        C[r][c] -= factor * C[p][c];
+                    }
+                    ones[r] -= factor * ones[p];
+                }
+            }
+            std::vector<double> w(n_neighbors);
+            for (int irow = n_neighbors - 1; irow >= 0; --irow) {
+                double sum = ones[irow];
+                for (int jcol = irow + 1; jcol < n_neighbors; ++jcol) {
+                    sum -= C[irow][jcol] * w[jcol];
+                }
+                w[irow] = sum;
+            }
+            double s = 0.0;
+            for (int a = 0; a < n_neighbors; ++a) {
+                s += w[a];
+            }
+            for (int a = 0; a < n_neighbors; ++a) {
+                W[i][neighbors[i][a]] = w[a] / s;
+            }
+        }
+
+        // 4. 构造 M = (I - W)^T * (I - W)
+        std::vector<std::vector<double>> IminusW(n,
+            std::vector<double>(n, 0.0));
+        for (size_t i = 0; i < n; ++i) {
+            for (size_t j = 0; j < n; ++j) {
+                IminusW[i][j] = ((i == j) ? 1.0 : 0.0) - W[i][j];
+            }
+        }
+        std::vector<std::vector<double>> At = transposeMatrix(IminusW);
+        std::vector<std::vector<double>> M = multiplyMatrix(At, IminusW);
+
+        // 5. 特征分解 M
+        std::vector<double> evals;
+        std::vector<std::vector<double>> evecs;
+        std::tie(evals, evecs) = eigenvalues_and_eigenvectors(M, 1000, 1e-6);
+        std::vector<int> idx(n);
+        std::iota(idx.begin(), idx.end(), 0);
+        std::sort(idx.begin(), idx.end(), [&](int a, int b) {
+            return evals[a] < evals[b];
+            });
+        std::vector<std::vector<double>> Y(n, std::vector<double>(dim, 0.0));
+        for (int d = 0; d < dim; ++d) {
+            int ev = idx[d + 1];
+            for (size_t i = 0; i < n; ++i) {
+                Y[i][d] = evecs[i][ev];
+            }
+        }
+
+        return Y;
+    }
 
 }
 
