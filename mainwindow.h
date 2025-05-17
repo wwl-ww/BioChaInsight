@@ -17,6 +17,15 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    void init_main();
+    void init_menu();
+    void init_status();
+    void init_tool();
+    void init_readme();
+
+    void alignment_init();
+    void alignment_run();
+
 private:
     Ui::MainWindow *ui;
 };
