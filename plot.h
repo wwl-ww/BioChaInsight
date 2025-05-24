@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #ifndef PLOT_H
 #define PLOT_H
 
@@ -8,6 +8,20 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+
+#include <QtCharts/QChartView>
+#include <QtCharts/QPieSeries>
+#include <QtCharts/QPieSlice>
+#include <QtCharts/QPieLegendMarker>
+#include <QtCharts/QChart>
+#include <QtCharts/QLegend>
+#include <QtWidgets/QDialog>
+#include <QtWidgets/QHBoxLayout>
+#include <QtGui/QFont>
+#include <QtGui/QColor>
+#include "FASTA.h"
+
+using namespace QtCharts;
 using namespace std;
 
 namespace plt = matplotlibcpp;
@@ -17,133 +31,146 @@ bool init_python(const string& python_home = "D:/anaconda");
 namespace GenePlot
 {
 
-    /**
-     * »­»ğÉ½Í¼£¨Volcano Plot£©
-     * @param log2fc        Ã¿¸ö»ùÒòµÄ log2 Fold Change£¨¶ÔÊı±í´ï²îÒì±¶Êı£©
-     * @param pvals         Ã¿¸ö»ùÒò¶ÔÓ¦µÄ p Öµ
-     * @param genes         ËùÓĞ»ùÒòµÄÃû×Ö£¨¿ÉÑ¡£¬Èç¹ûÒª±ê×¢ÌØ¶¨»ùÒò£©
-     * @param fc_thresh     Fold Change ãĞÖµ£¨ÀıÈç 1.0 ±íÊ¾ 2 ±¶²îÒì£¬Ä¬ÈÏÊÇ1.0£©
-     * @param pval_thresh   p ÖµãĞÖµ£¨ÀıÈç 0.05 ±íÊ¾ 5% ÏÔÖøĞÔË®Æ½£¬Ä¬ÈÏÊÇ0.05£©
-     */
-    void volcano(
-        const vector<double>& log2fc,
-        const vector<double>& pvals,
-        const vector<string>& genes = {}, // Õâ¸öÖ®ºóÔÙÊµÏÖ
-        double fc_thresh = 1.0,
-        double pval_thresh = 0.05);
+	/**
+	 * ç”»ç«å±±å›¾ï¼ˆVolcano Plotï¼‰
+	 * @param log2fc        æ¯ä¸ªåŸºå› çš„ log2 Fold Changeï¼ˆå¯¹æ•°è¡¨è¾¾å·®å¼‚å€æ•°ï¼‰
+	 * @param pvals         æ¯ä¸ªåŸºå› å¯¹åº”çš„ p å€¼
+	 * @param genes         æ‰€æœ‰åŸºå› çš„åå­—ï¼ˆå¯é€‰ï¼Œå¦‚æœè¦æ ‡æ³¨ç‰¹å®šåŸºå› ï¼‰
+	 * @param fc_thresh     Fold Change é˜ˆå€¼ï¼ˆä¾‹å¦‚ 1.0 è¡¨ç¤º 2 å€å·®å¼‚ï¼Œé»˜è®¤æ˜¯1.0ï¼‰
+	 * @param pval_thresh   p å€¼é˜ˆå€¼ï¼ˆä¾‹å¦‚ 0.05 è¡¨ç¤º 5% æ˜¾è‘—æ€§æ°´å¹³ï¼Œé»˜è®¤æ˜¯0.05ï¼‰
+	 */
+	void volcano(
+		const vector<double>& log2fc,
+		const vector<double>& pvals,
+		const vector<string>& genes = {}, // è¿™ä¸ªä¹‹åå†å®ç°
+		double fc_thresh = 1.0,
+		double pval_thresh = 0.05
+	);
 
-    /*void heatmap(const vector<vector<double>>& matrix,
-        const vector<string>& gene_labels,
-        const vector<string>& sample_labels) {
+	/**
+	 * å¯¹ç»™å®šæ•°æ®è¿›è¡Œä¸»æˆåˆ†åˆ†æï¼ˆPCAï¼‰ï¼Œå°†æ•°æ®é™ç»´åˆ°æŒ‡å®šçš„ç»´åº¦ï¼Œ
+	 * ç„¶åå¯¹é™ç»´åçš„æ•°æ®åº”ç”¨ K-means èšç±»ï¼Œå¹¶ç»˜åˆ¶èšç±»ç»“æœã€‚
+	 *
+	 * è¯¥å‡½æ•°é¦–å…ˆå¯¹è¾“å…¥æ•°æ®è¿›è¡Œ PCA é™ç»´ï¼Œé™ç»´åˆ°æŒ‡å®šæ•°é‡çš„ä¸»æˆåˆ†ï¼ˆé»˜è®¤ä¸º 2 ç»´ï¼Œä»¥ä¾¿è¿›è¡ŒäºŒç»´å¯è§†åŒ–ï¼‰ã€‚
+	 * é™ç»´å®Œæˆåï¼Œåº”ç”¨ K-means èšç±»ç®—æ³•å°†æ•°æ®åˆ’åˆ†ä¸º `k` ä¸ªç°‡ã€‚ç„¶åï¼Œå‡½æ•°å°†æ•°æ®ç‚¹å¯è§†åŒ–ï¼Œ
+	 * æ¯ä¸ªç°‡ä½¿ç”¨ä¸åŒçš„é¢œè‰²è¡¨ç¤ºã€‚
+	 *
+	 * å¯è§†åŒ–çš„æ•£ç‚¹å›¾ä¸­ï¼š
+	 * - X è½´è¡¨ç¤ºç¬¬ä¸€ä¸»æˆåˆ†ã€‚
+	 * - Y è½´è¡¨ç¤ºç¬¬äºŒä¸»æˆåˆ†ã€‚
+	 * - æ¯ä¸ªç°‡ä½¿ç”¨ä¸åŒé¢œè‰²è¡¨ç¤ºã€‚
+	 *
+	 * @param data ä¸€ä¸ªäºŒç»´å‘é‡ï¼Œæ¯ä¸€è¡Œæ˜¯ä¸€ä¸ªæ•°æ®ç‚¹ï¼Œæ¯ä¸€åˆ—æ˜¯ä¸€ä¸ªç‰¹å¾ã€‚
+	 *             è¿™æ˜¯è¾“å…¥çš„æ•°æ®ï¼Œå°†ä¼šé€šè¿‡ PCA é™ç»´ï¼Œå¹¶ä½¿ç”¨ K-means èšç±»ã€‚
+	 * @param k K-means èšç±»çš„ç°‡æ•°ï¼Œå‡½æ•°å°†æ•°æ®åˆ’åˆ†ä¸º `k` ä¸ªç°‡ã€‚
+	 * @param pca_components PCA é™ç»´åä¿ç•™çš„ä¸»æˆåˆ†æ•°é‡ï¼Œé»˜è®¤å€¼ä¸º 2ï¼Œé€‚ç”¨äºäºŒç»´å¯è§†åŒ–ã€‚
+	 *
+	 * @throws invalid_argument å¦‚æœç°‡æ•° `k` å°äº 1ï¼Œæˆ–è€…è¾“å…¥æ•°æ®ä¸ºç©ºã€‚
+	 *
+	 * @note è¯¥å‡½æ•°å‡å®šè¾“å…¥æ•°æ®é€‚åˆè¿›è¡Œ PCAï¼ˆå³æ•°æ®æ˜¯æ•°å€¼å‹ä¸”æ ¼å¼æ­£ç¡®ï¼‰ã€‚
+	 */
+	void plotPCAWithKMeans(
+		const vector<vector<double>>& data,
+		int k,
+		int pca_components = 2
+	);
 
-        plt::figure();
-        plt::imshow(matrix);
-        plt::colorbar();
-        plt::title("Gene Expression Heatmap");
-    }*/
+	/**
+	 * @brief ç›´æ¥æ ¹æ®å¤–éƒ¨ä¼ å…¥çš„äºŒç»´ç‚¹ data å’Œå¯¹åº”çš„ labels ç”»æ•£ç‚¹å›¾
+	 * @param data   n*2 çš„åŸå§‹æ•°æ®ï¼Œæ¯ä¸ªå­ vector é•¿åº¦å¿…é¡»ä¸º 2
+	 * @param labels é•¿åº¦ä¸º nï¼Œæ¯ä¸ªå…ƒç´ æ˜¯è¯¥ç‚¹çš„ç±»åˆ«æ ‡ç­¾ï¼ˆ0,1,2,â€¦ï¼‰
+	 * @throw invalid_argument å½“ data/labels å¤§å°ä¸ä¸€è‡´æˆ– data[i] é•¿åº¦ä¸ä¸º 2
+	 */
+	void plotClusterScatter(
+		const vector<vector<double>>& data,
+		const vector<int>& labels
+	);
 
-    /**
-     * ¶Ô¸ø¶¨Êı¾İ½øĞĞÖ÷³É·Ö·ÖÎö£¨PCA£©£¬½«Êı¾İ½µÎ¬µ½Ö¸¶¨µÄÎ¬¶È£¬
-     * È»ºó¶Ô½µÎ¬ºóµÄÊı¾İÓ¦ÓÃ K-means ¾ÛÀà£¬²¢»æÖÆ¾ÛÀà½á¹û¡£
-     *
-     * ¸Ãº¯ÊıÊ×ÏÈ¶ÔÊäÈëÊı¾İ½øĞĞ PCA ½µÎ¬£¬½µÎ¬µ½Ö¸¶¨ÊıÁ¿µÄÖ÷³É·Ö£¨Ä¬ÈÏÎª 2 Î¬£¬ÒÔ±ã½øĞĞ¶şÎ¬¿ÉÊÓ»¯£©¡£
-     * ½µÎ¬Íê³Éºó£¬Ó¦ÓÃ K-means ¾ÛÀàËã·¨½«Êı¾İ»®·ÖÎª `k` ¸ö´Ø¡£È»ºó£¬º¯Êı½«Êı¾İµã¿ÉÊÓ»¯£¬
-     * Ã¿¸ö´ØÊ¹ÓÃ²»Í¬µÄÑÕÉ«±íÊ¾¡£
-     *
-     * ¿ÉÊÓ»¯µÄÉ¢µãÍ¼ÖĞ£º
-     * - X Öá±íÊ¾µÚÒ»Ö÷³É·Ö¡£
-     * - Y Öá±íÊ¾µÚ¶şÖ÷³É·Ö£¨Èç¹û `pca_components` > 2£¬Ôò±íÊ¾ÆäËûÖ÷³É·Ö£©¡£
-     * - Ã¿¸ö´ØÊ¹ÓÃ²»Í¬ÑÕÉ«±íÊ¾¡£
-     *
-     * @param data Ò»¸ö¶şÎ¬ÏòÁ¿£¬Ã¿Ò»ĞĞÊÇÒ»¸öÊı¾İµã£¬Ã¿Ò»ÁĞÊÇÒ»¸öÌØÕ÷¡£
-     *             ÕâÊÇÊäÈëµÄÊı¾İ£¬½«»áÍ¨¹ı PCA ½µÎ¬£¬²¢Ê¹ÓÃ K-means ¾ÛÀà¡£
-     * @param k K-means ¾ÛÀàµÄ´ØÊı£¬º¯Êı½«Êı¾İ»®·ÖÎª `k` ¸ö´Ø¡£
-     * @param pca_components PCA ½µÎ¬ºó±£ÁôµÄÖ÷³É·ÖÊıÁ¿£¬Ä¬ÈÏÖµÎª 2£¬ÊÊÓÃÓÚ¶şÎ¬¿ÉÊÓ»¯¡£
-     *
-     * @throws invalid_argument Èç¹û´ØÊı `k` Ğ¡ÓÚ 1£¬»òÕßÊäÈëÊı¾İÎª¿Õ¡£
-     *
-     * @note ¸Ãº¯Êı¼Ù¶¨ÊäÈëÊı¾İÊÊºÏ½øĞĞ PCA£¨¼´Êı¾İÊÇÊıÖµĞÍÇÒ¸ñÊ½ÕıÈ·£©¡£
-     */
-    void plotPCAWithKMeans(
-        const vector<vector<double>>& data,
-        int k,
-        int pca_components = 2);
+	/**
+	 * @brief ç»˜åˆ¶é«˜æ–¯æ ¸å¯†åº¦ä¼°è®¡ï¼ˆKDEï¼‰æ›²çº¿
+	 * @param samples è¾“å…¥çš„ä¸€ç»´æ•°æ®æ ·æœ¬å‘é‡
+	 * @param bandwidth é«˜æ–¯æ ¸å¸¦å®½ï¼ˆhï¼‰ï¼Œæ§åˆ¶å¹³æ»‘ç¨‹åº¦
+	 * @param grid_n æ …æ ¼ç‚¹æ•°é‡ï¼Œå†³å®šåœ¨æ¨ªè½´åŒºé—´ä¸Šé‡‡æ ·çš„ç‚¹æ•°
+	 * @param width å›¾åƒç”»å¸ƒå®½åº¦ï¼ˆåƒç´ ï¼‰
+	 * @param height å›¾åƒç”»å¸ƒé«˜åº¦ï¼ˆåƒç´ ï¼‰
+	 */
+	void plotKDE(
+		const vector<double>& samples,
+		double bandwidth,
+		int grid_n = 200,
+		int width = 800,
+		int height = 600
+	);
 
-    /**
-     * @brief »æÖÆ¸ßË¹ºËÃÜ¶È¹À¼Æ£¨KDE£©ÇúÏß
-     * @param samples ÊäÈëµÄÒ»Î¬Êı¾İÑù±¾ÏòÁ¿
-     * @param bandwidth ¸ßË¹ºË´ø¿í£¨h£©£¬¿ØÖÆÆ½»¬³Ì¶È
-     * @param grid_n Õ¤¸ñµãÊıÁ¿£¬¾ö¶¨ÔÚºáÖáÇø¼äÉÏ²ÉÑùµÄµãÊı
-     * @param width Í¼Ïñ»­²¼¿í¶È£¨ÏñËØ£©
-     * @param height Í¼Ïñ»­²¼¸ß¶È£¨ÏñËØ£©
-     */
-    void plotKDE(
-        const vector<double>& samples,
-        double bandwidth,
-        int grid_n = 200,
-        int width = 800,
-        int height = 600
-    );
+	/**
+	 * @brief åœ¨åŒä¸€å¼ å›¾ä¸­ç»˜åˆ¶æ ·æœ¬ç›´æ–¹å›¾å’Œé«˜æ–¯æ ¸å¯†åº¦ä¼°è®¡ï¼ˆKDEï¼‰æ›²çº¿
+	 * @param samples è¾“å…¥çš„ä¸€ç»´æ•°æ®æ ·æœ¬å‘é‡
+	 * @param bandwidth é«˜æ–¯æ ¸å¸¦å®½ï¼ˆhï¼‰ï¼Œæ§åˆ¶å¯†åº¦æ›²çº¿çš„å¹³æ»‘ç¨‹åº¦
+	 * @param bins ç›´æ–¹å›¾æŸ±å­æ•°é‡ï¼ˆé»˜è®¤ 30ï¼‰
+	 * @param grid_n KDE æ›²çº¿é‡‡æ ·ç‚¹æ•°ï¼ˆé»˜è®¤ 200ï¼‰
+	 * @param width å›¾åƒç”»å¸ƒå®½åº¦ï¼ˆåƒç´ ï¼Œé»˜è®¤ 800ï¼‰
+	 * @param height å›¾åƒç”»å¸ƒé«˜åº¦ï¼ˆåƒç´ ï¼Œé»˜è®¤ 600ï¼‰
+	 */
+	void plotHistogramKDE(
+		const vector<double>& samples,
+		double bandwidth,
+		int bins = 30,
+		int grid_n = 200,
+		int width = 800,
+		int height = 600
+	);
 
-    /**
-     * @brief ÔÚÍ¬Ò»ÕÅÍ¼ÖĞ»æÖÆÑù±¾Ö±·½Í¼ºÍ¸ßË¹ºËÃÜ¶È¹À¼Æ£¨KDE£©ÇúÏß
-     * @param samples ÊäÈëµÄÒ»Î¬Êı¾İÑù±¾ÏòÁ¿
-     * @param bandwidth ¸ßË¹ºË´ø¿í£¨h£©£¬¿ØÖÆÃÜ¶ÈÇúÏßµÄÆ½»¬³Ì¶È
-     * @param bins Ö±·½Í¼Öù×ÓÊıÁ¿£¨Ä¬ÈÏ 30£©
-     * @param grid_n KDE ÇúÏß²ÉÑùµãÊı£¨Ä¬ÈÏ 200£©
-     * @param width Í¼Ïñ»­²¼¿í¶È£¨ÏñËØ£¬Ä¬ÈÏ 800£©
-     * @param height Í¼Ïñ»­²¼¸ß¶È£¨ÏñËØ£¬Ä¬ÈÏ 600£©
-     */
-    void plotHistogramKDE(
-        const vector<double>& samples,
-        double bandwidth,
-        int bins = 30,
-        int grid_n = 200,
-        int width = 800,
-        int height = 600
-    );
+	/**
+	 * @brief ä¼ å…¥ä¸¤ä¸ªå‘é‡ï¼Œç”»å‡ºä¸¤æ¡çº¿
+	 */
+	void plot_two_lines(
+		const vector<double>& y1,
+		const vector<double>& y2,
+		int width = 800,
+		int height = 600
+	);
 
-    /**
-     * @brief ´«ÈëÁ½¸öÏòÁ¿£¬»­³öÁ½ÌõÏß
-     */
-    void plot_two_lines(
-        const vector<double>& y1, 
-        const vector<double>& y2,
-        int width = 800,
-        int height = 600
-    );
+	/**
+	 * @brief ä¼ å…¥ä¸¤ä¸ªå‘é‡ï¼Œä¸€ä¸ªä½œä¸ºxï¼Œä¸€ä¸ªä½œä¸ºyã€‚åŒæ—¶ç”»å‡ºy=x
+	 */
+	void plot_two_xy(
+		const vector<double>& y1,
+		const vector<double>& y2,
+		int width = 800,
+		int height = 600
+	);
 
-    /**
-     * @brief ´«ÈëÁ½¸öÏòÁ¿£¬Ò»¸ö×÷Îªx£¬Ò»¸ö×÷Îªy¡£Í¬Ê±»­³öy=x
-     */
-    void plot_two_xy(
-        const vector<double>& y1,
-        const vector<double>& y2,
-        int width = 800,
-        int height = 600
-    );
+	/**
+	 * @brief ä¼ å…¥ä¸¤ä¸ªå‘é‡ï¼Œåœ¨åŒä¸€å¼ å›¾ä¸Šç”»ä¸¤ä¸ªç®±çº¿å›¾
+	 */
+	void plot_two_boxplot(
+		const vector<double>& y1,
+		const vector<double>& y2,
+		int width = 800,
+		int height = 600
+	);
 
-    /**
-     * @brief ´«ÈëÁ½¸öÏòÁ¿£¬ÔÚÍ¬Ò»ÕÅÍ¼ÉÏ»­Á½¸öÏäÏßÍ¼
-     */
-    void plot_two_boxplot(
-        const vector<double>& y1,
-        const vector<double>& y2,
-        int width = 800,
-        int height = 600
-    );
+	/**
+	* @brief æ¥æ”¶ä¸€ä¸ªäºŒç»´çŸ©é˜µï¼Œç»˜åˆ¶çƒ­åŠ›å›¾
+	*/
+	void plot_heatmap(
+		const vector<vector<double>>& matrix,
+		bool show_colorbar = true,
+		int width = 800,
+		int height = 600
+	);
 
-    /**
-    * @brief ½ÓÊÕÒ»¸ö¶şÎ¬¾ØÕó£¬»æÖÆÈÈÁ¦Í¼
-    */
-    void plot_heatmap(
-        const vector<vector<double>>& matrix,
-        bool show_colorbar = true,
-        int width = 800,
-        int height = 600
-    );
-
+	/**
+	* @brief å¼¹å‡ºå¯¹è¯æ¡†ï¼Œå·¦å³å¹¶æ’å±•ç¤ºä¸¤ä¸ª Sequence çš„ A/C/G/T é¥¼å›¾ï¼Œ
+	*        æ ‡é¢˜ä¸­æ˜¾ç¤ºå„è‡ªçš„é•¿åº¦å’Œåˆ†å­é‡ã€‚
+	*/
+	void showTwoBaseCompositionPieDialog(
+		const Sequence& seq1,
+		const Sequence& seq2,
+		QWidget* parent
+	);
 
 } // namespace GenePlot
 
-#endif //
+
+#endif 

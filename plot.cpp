@@ -1,347 +1,453 @@
+ï»¿#include "stdafx.h"
 #include "plot.h"
 #include "ST.h"
+#include "FASTA.h"
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
 
-bool init_python(const string &python_home)
+bool init_python(const string& python_home)
 {
-    string path = python_home;
-    replace(path.begin(), path.end(), '\\', '/');
+	string path = python_home;
+	replace(path.begin(), path.end(), '\\', '/');
 
-    wstring wpath(path.begin(), path.end());
-    wchar_t *pyhome = _wcsdup(wpath.c_str());
+	wstring wpath(path.begin(), path.end());
+	wchar_t* pyhome = _wcsdup(wpath.c_str());
 
-    Py_SetPythonHome(pyhome);
-    Py_Initialize();
+	Py_SetPythonHome(pyhome);
+	Py_Initialize();
 
-    if (!Py_IsInitialized())
-    {
-        cerr << "[ERROR] Python ³õÊ¼»¯Ê§°Ü\n";
-        return 0;
-    }
+	if (!Py_IsInitialized())
+	{
+		cerr << "[ERROR] Python åˆå§‹åŒ–å¤±è´¥\n";
+		return 0;
+	}
 
-    string setup =
-        "import sys\n"
-        "sys.path.insert(0, '" +
-        python_home + "/Lib')\n"
-                      "sys.path.insert(0, '" +
-        python_home + "/Lib/site-packages')\n"
-                      "sys.path.insert(0, '" +
-        python_home + "/DLLs')\n"
-                      "print('[PYTHON] sys.path:')\n"
-                      "import pprint; pprint.pprint(sys.path)\n"
-                      "import encodings";
+	string setup =
+		"import sys\n"
+		"sys.path.insert(0, '" +
+		python_home + "/Lib')\n"
+		"sys.path.insert(0, '" +
+		python_home + "/Lib/site-packages')\n"
+		"sys.path.insert(0, '" +
+		python_home + "/DLLs')\n"
+		"print('[PYTHON] sys.path:')\n"
+		"import pprint; pprint.pprint(sys.path)\n"
+		"import encodings";
 
-    PyRun_SimpleString(setup.c_str());
-    import_array(); // ·Ç³£ÖØÒª£¬³õÊ¼»¯ PyArray_API Ö¸Õë
-    return 1;
+	PyRun_SimpleString(setup.c_str());
+	import_array();
+	return 1;
 }
 
 void GenePlot::volcano(
-    const vector<double> &log2fc,
-    const vector<double> &pvals,
-    const vector<string> &genes,
-    double fc_thresh,
-    double pval_thresh)
+	const vector<double>& log2fc,
+	const vector<double>& pvals,
+	const vector<string>& genes,
+	double fc_thresh,
+	double pval_thresh)
 {
-    // GenePlot::init_python();
+	// GenePlot::init_python();
 
-    vector<double> x_up, y_up, x_down, y_down, x_ns, y_ns;
+	vector<double> x_up, y_up, x_down, y_down, x_ns, y_ns;
 
-    for (size_t i = 0; i < log2fc.size(); ++i)
-    {
-        double fc = log2fc[i];
-        double p = pvals[i];
-        double neglogp = -log10(p + 1e-10);
+	for (size_t i = 0; i < log2fc.size(); ++i)
+	{
+		double fc = log2fc[i];
+		double p = pvals[i];
+		double neglogp = -log10(p + 1e-10);
 
-        if (p < pval_thresh)
-        {
-            if (fc > fc_thresh)
-            {
-                x_up.push_back(fc);
-                y_up.push_back(neglogp);
-            }
-            else if (fc < -fc_thresh)
-            {
-                x_down.push_back(fc);
-                y_down.push_back(neglogp);
-            }
-            else
-            {
-                x_ns.push_back(fc);
-                y_ns.push_back(neglogp);
-            }
-        }
-        else
-        {
-            x_ns.push_back(fc), y_ns.push_back(neglogp);
-        }
-    }
+		if (p < pval_thresh)
+		{
+			if (fc > fc_thresh)
+			{
+				x_up.push_back(fc);
+				y_up.push_back(neglogp);
+			}
+			else if (fc < -fc_thresh)
+			{
+				x_down.push_back(fc);
+				y_down.push_back(neglogp);
+			}
+			else
+			{
+				x_ns.push_back(fc);
+				y_ns.push_back(neglogp);
+			}
+		}
+		else
+		{
+			x_ns.push_back(fc), y_ns.push_back(neglogp);
+		}
+	}
 
-    // »­Í¼
-    plt::scatter(x_ns, y_ns, 10.0, {{"color", "grey"}, {"label", "NS"}});
-    plt::scatter(x_up, y_up, 10.0, {{"color", "red"}, {"label", "Up"}});
-    plt::scatter(x_down, y_down, 10.0, {{"color", "blue"}, {"label", "Down"}});
+	// ç”»å›¾
+	plt::scatter(x_ns, y_ns, 10.0, { {"color", "grey"}, {"label", "NS"} });
+	plt::scatter(x_up, y_up, 10.0, { {"color", "red"}, {"label", "Up"} });
+	plt::scatter(x_down, y_down, 10.0, { {"color", "blue"}, {"label", "Down"} });
 
-    // ²Î¿¼Ïß
-    double y = -log10(pval_thresh);
-    vector<double> x = {0.0, 1.0};
-    vector<double> yline = {y, y};
-    plt::plot(x, yline, {{"linestyle", "--"}});
-    plt::axvline(fc_thresh, 0, 1, {{"linestyle", "--"}});
-    plt::axvline(-fc_thresh, 0, 1, {{"linestyle", "--"}});
+	// å‚è€ƒçº¿
+	double y = -log10(pval_thresh);
+	vector<double> x = { 0.0, 1.0 };
+	vector<double> yline = { y, y };
+	plt::plot(x, yline, { {"linestyle", "--"} });
+	plt::axvline(fc_thresh, 0, 1, { {"linestyle", "--"} });
+	plt::axvline(-fc_thresh, 0, 1, { {"linestyle", "--"} });
 
-    plt::xlabel("log2 Fold Change");
-    plt::ylabel("-log10(p-value)");
-    plt::title("Volcano Plot");
-    plt::legend();
+	plt::xlabel("log2 Fold Change");
+	plt::ylabel("-log10(p-value)");
+	plt::title("Volcano Plot");
+	plt::legend();
+	plt::show();
 }
 
 void GenePlot::plotPCAWithKMeans(
-    const std::vector<std::vector<double>> &data,
-    int k,
-    int pca_components)
+	const vector<vector<double>>& data,
+	int k,
+	int pca_components)
 {
-    // 1. Ö´ĞĞ PCA ½«Êı¾İ½µÎ¬µ½Ö¸¶¨Î¬¶È
-    std::vector<std::vector<double>> pca_result = StatTools::performPCA(data, pca_components);
+	vector<vector<double>> pca_result = StatTools::performPCA(data, pca_components);
+	vector<int> labels = StatTools::kMeans(pca_result, k);
 
-    // 2. Ê¹ÓÃ K-means ¾ÛÀàËã·¨¶ÔÊı¾İ½øĞĞ¾ÛÀà
-    std::vector<int> labels = StatTools::kMeans(pca_result, k);
+	vector<vector<double>> x_vals(k), y_vals(k);
 
-    // 3. ¶¯Ì¬ÎªÃ¿¸ö´Ø·ÖÅä²»Í¬µÄÑÕÉ«
-    std::vector<std::vector<double>> x_vals(k), y_vals(k); // ´æ´¢Ã¿¸ö´ØµÄxºÍy×ø±ê
+	for (size_t i = 0; i < pca_result.size(); ++i)
+	{
+		int cluster = labels[i];
+		x_vals[cluster].push_back(pca_result[i][0]); // x
+		y_vals[cluster].push_back(pca_result[i][1]); // y
+	}
 
-    // ½«½µÎ¬ºóµÄÊı¾İµã°´´Ø±êÇ©·ÖÅä
-    for (size_t i = 0; i < pca_result.size(); ++i)
-    {
-        int cluster = labels[i];
-        x_vals[cluster].push_back(pca_result[i][0]); // µÚÒ»Ö÷³É·Ö£¨x×ø±ê£©
-        y_vals[cluster].push_back(pca_result[i][1]); // µÚ¶şÖ÷³É·Ö£¨y×ø±ê£©
-    }
+	vector<string> colors = { "red", "blue", "green", "purple", "orange", "pink", "cyan", "yellow" };
 
-    // 4. »æÍ¼£ºÎªÃ¿¸ö´ØÊ¹ÓÃ²»Í¬µÄÑÕÉ«
-    std::vector<std::string> colors = {"red", "blue", "green", "purple", "orange", "pink", "cyan", "yellow"};
+	for (int i = 0; i < k; ++i)
+	{
+		string color = colors[i % colors.size()]; // å¾ªç¯ä½¿ç”¨
+		string label = "Cluster " + to_string(i + 1);
+		plt::scatter(x_vals[i], y_vals[i], 10.0, { {"color", color}, {"label", label} });
+	}
 
-    for (int i = 0; i < k; ++i)
-    {
-        std::string color = colors[i % colors.size()]; // ÑÕÉ«Ñ­»·Ê¹ÓÃ
-        std::string label = "Cluster " + std::to_string(i + 1);
-        plt::scatter(x_vals[i], y_vals[i], 10.0, {{"color", color}, {"label", label}});
-    }
+	plt::xlabel("Principal Component 1");
+	plt::ylabel("Principal Component 2");
+	plt::title("PCA with K-means Clustering");
+	plt::legend();
+	plt::show();
+}
 
-    // 5. ÉèÖÃ²Î¿¼ÏßºÍÍ¼ĞÎ±êÇ©
-    plt::xlabel("Principal Component 1");
-    plt::ylabel("Principal Component 2");
-    plt::title("PCA with K-means Clustering");
-    plt::legend(); // ÏÔÊ¾Í¼Àı
+void GenePlot::plotClusterScatter(
+	const vector<vector<double>>& data,
+	const vector<int>& labels)
+{
+	size_t n = data.size();
+	if (labels.size() != n)
+		throw invalid_argument("data.size() != labels.size()");
+
+	// ç¡®ä¿æ¯ä¸ªç‚¹æ˜¯äºŒç»´
+	for (size_t i = 0; i < n; ++i) {
+		if (data[i].size() != 2)
+			throw invalid_argument("each data[i] must have exactly 2 elements");
+	}
+
+	vector<int> uniq = labels;
+	sort(uniq.begin(), uniq.end());
+	uniq.erase(unique(uniq.begin(), uniq.end()), uniq.end());
+
+	map<int, vector<double>> xs_map, ys_map;
+	for (size_t i = 0; i < n; ++i) {
+		xs_map[labels[i]].push_back(data[i][0]);
+		ys_map[labels[i]].push_back(data[i][1]);
+	}
+
+	static const vector<string> colors = {
+		"red","blue","green","purple","orange",
+		"pink","cyan","yellow","black","brown"
+	};
+
+	for (size_t idx = 0; idx < uniq.size(); ++idx) {
+		int lbl = uniq[idx];
+		auto& xs = xs_map[lbl];
+		auto& ys = ys_map[lbl];
+		string c = colors[idx % colors.size()];
+		plt::scatter(xs, ys, 20.0, {
+			{"color", c},
+			{"label", to_string(lbl)}
+			});
+	}
+
+	plt::xlabel("X");
+	plt::ylabel("Y");
+	plt::title("Clustered Scatter Plot");
+	plt::legend();
+	plt::show();
 }
 
 void GenePlot::plotKDE(
-    const std::vector<double>& samples,
-    double bandwidth,
-    int grid_n,
-    int width,
-    int height 
+	const vector<double>& samples,
+	double bandwidth,
+	int grid_n,
+	int width,
+	int height
 ) {
-    // Initialize Python interpreter and matplotlib backend
-    plt::detail::_interpreter::get();
+	plt::detail::_interpreter::get();
 
-    // Compute grid range
-    double xmin = *std::min_element(samples.begin(), samples.end());
-    double xmax = *std::max_element(samples.begin(), samples.end());
-    double margin = 3 * bandwidth;
-    xmin -= margin;
-    xmax += margin;
+	double xmin = *min_element(samples.begin(), samples.end());
+	double xmax = *max_element(samples.begin(), samples.end());
+	double margin = 3 * bandwidth;
+	xmin -= margin;
+	xmax += margin;
 
-    // Build grid
-    std::vector<double> grid_x(grid_n);
-    for (int i = 0; i < grid_n; ++i) {
-        grid_x[i] = xmin + (xmax - xmin) * i / (grid_n - 1);
-    }
+	vector<double> grid_x(grid_n);
+	for (int i = 0; i < grid_n; ++i) {
+		grid_x[i] = xmin + (xmax - xmin) * i / (grid_n - 1);
+	}
 
-    // Compute densities
-    auto densities = StatTools::computeKDE(samples, grid_x, bandwidth);
+	auto densities = StatTools::computeKDE(samples, grid_x, bandwidth);
 
-    // Plot
-    plt::figure_size(width, height);
-    plt::plot(grid_x, densities);
-    plt::xlabel("Value");
-    plt::ylabel("Density");
-    plt::title("Kernel Density Estimation (Gaussian h=" + std::to_string(bandwidth) + ")");
-    plt::grid(true);
-    plt::show();
+	// Plot
+	plt::figure_size(width, height);
+	plt::plot(grid_x, densities);
+	plt::xlabel("Value");
+	plt::ylabel("Density");
+	plt::title("Kernel Density Estimation (Gaussian h=" + to_string(bandwidth) + ")");
+	plt::grid(true);
+	plt::show();
 }
 
 
 void GenePlot::plotHistogramKDE(
-    const std::vector<double>& samples,
-    double bandwidth,
-    int bins,
-    int grid_n,
-    int width,
-    int height
+	const vector<double>& samples,
+	double bandwidth,
+	int bins,
+	int grid_n,
+	int width,
+	int height
 ) {
-    // 1) ³õÊ¼»¯½âÊÍÆ÷£¨Ö»Ğèµ÷ÓÃÒ»´Î£¬·Åµ½ main() ÀïÒ²ĞĞ£©
-    static auto& interp = plt::detail::_interpreter::get();
+	static auto& interp = plt::detail::_interpreter::get();
 
-    // 2) »­¹éÒ»»¯Ö±·½Í¼£ºnamed_hist »á×Ô¶¯¹éÒ»»¯£¨area=1£©²¢´ø±êÇ©
-    plt::figure_size(width, height);
-    plt::hist(
-        samples,         // Ñù±¾Êı¾İ
-        bins,            // Öù×ÓÊı
-        "grey",          // ÑÕÉ«
-        0.5              // Í¸Ã÷¶È
-    );
+	plt::figure_size(width, height);
+	plt::hist(
+		samples,         // æ ·æœ¬æ•°æ®
+		bins,            // æŸ±å­æ•°
+		"grey",          // é¢œè‰²
+		0.5              // é€æ˜åº¦
+	);
 
-    // 3) ¼ÆËãÑù±¾·¶Î§ + Èı±¶´ø¿íµÄÀ©Õ¹Çø¼ä
-    auto mm = std::minmax_element(samples.begin(), samples.end());
-    double xmin = *mm.first, xmax = *mm.second;
-    xmin -= 3 * bandwidth;
-    xmax += 3 * bandwidth;
+	auto mm = minmax_element(samples.begin(), samples.end());
+	double xmin = *mm.first, xmax = *mm.second;
+	xmin -= 3 * bandwidth;
+	xmax += 3 * bandwidth;
 
-    // 4) ¹¹½¨ grid_x
-    std::vector<double> grid_x(grid_n);
-    for (int i = 0; i < grid_n; ++i) {
-        grid_x[i] = xmin + (xmax - xmin) * i / (grid_n - 1);
-    }
+	vector<double> grid_x(grid_n);
+	for (int i = 0; i < grid_n; ++i) {
+		grid_x[i] = xmin + (xmax - xmin) * i / (grid_n - 1);
+	}
 
-    // 5) ¼ÆËã KDE ÃÜ¶È
-    auto densities = StatTools::computeKDE(samples, grid_x, bandwidth);
+	auto densities = StatTools::computeKDE(samples, grid_x, bandwidth);
 
-    plt::plot(grid_x, densities);
-
-    plt::xlabel("Value");
-    plt::ylabel("Density");
-    plt::title("Histogram with KDE");
-    plt::legend();
-    plt::grid(true);
-    plt::show();
+	plt::plot(grid_x, densities);
+	plt::xlabel("Value");
+	plt::ylabel("Density");
+	plt::title("Histogram with KDE");
+	plt::legend();
+	plt::grid(true);
+	plt::show();
 }
 
 void GenePlot::plot_two_lines(
-    const std::vector<double>& y1, 
-    const std::vector<double>& y2,
-    int width,
-    int height
+	const vector<double>& y1,
+	const vector<double>& y2,
+	int width,
+	int height
 ) {
-    if (y1.size() != y2.size()) {
-        throw std::runtime_error("Á½¸öÏòÁ¿³¤¶È²»Ò»ÖÂ£¡");
-    }
+	if (y1.size() != y2.size()) {
+		throw runtime_error("ä¸¤ä¸ªå‘é‡é•¿åº¦ä¸ä¸€è‡´ï¼");
+	}
 
-    std::vector<double> x(y1.size());
-    for (size_t i = 0; i < x.size(); ++i)
-        x[i] = i;  // Éú³É x ×ø±ê
+	vector<double> x(y1.size());
+	for (size_t i = 0; i < x.size(); ++i)
+		x[i] = i;
 
-    plt::figure();
-    plt::plot(x, y1, "r-");
-    plt::plot(x, y2, "b-");
+	plt::figure();
+	plt::plot(x, y1, "r-");
+	plt::plot(x, y2, "b-");
 
-    plt::legend();
-    plt::xlabel("Index");
-    plt::ylabel("Value");
-    plt::title("Two Line Plot");
-    plt::grid(true);
-    plt::show();  // »ò plt::save("output.png");
+	plt::legend();
+	plt::xlabel("Index");
+	plt::ylabel("Value");
+	plt::title("Two Line Plot");
+	plt::grid(true);
+	plt::show();  // æˆ– plt::save("output.png");
 }
 
 void GenePlot::plot_two_xy(
-    const std::vector<double>& y1,
-    const std::vector<double>& y2,
-    int width,
-    int height
+	const vector<double>& y1,
+	const vector<double>& y2,
+	int width,
+	int height
 ) {
-    if (y1.size() != y2.size()) {
-        throw std::runtime_error("x ºÍ y ÏòÁ¿³¤¶È²»Ò»ÖÂ£¡");
-    }
+	if (y1.size() != y2.size()) {
+		throw runtime_error("x å’Œ y å‘é‡é•¿åº¦ä¸ä¸€è‡´ï¼");
+	}
 
-    plt::figure_size(width, height);
+	plt::figure_size(width, height);
 
-    plt::scatter(y1, y2, 10.0);
+	plt::scatter(y1, y2, 10.0);
 
-    // ÕÒµ½ËùÓĞµãÖĞµÄ min ºÍ max£¬ÓÃÓÚ¶Ô½ÇÏß
-    double min_x, max_x, min_y, max_y;
-    min_x = StatTools::min(y1);
-    min_y = StatTools::min(y2);
-    max_x = StatTools::max(y1);
-    max_y = StatTools::max(y2);
+	// æ‰¾åˆ°æ‰€æœ‰ç‚¹ä¸­çš„ min å’Œ maxï¼Œç”¨äºå¯¹è§’çº¿
+	double min_x, max_x, min_y, max_y;
+	min_x = StatTools::min(y1);
+	min_y = StatTools::min(y2);
+	max_x = StatTools::max(y1);
+	max_y = StatTools::max(y2);
 
-    double diag_min = std::min(min_x, min_y);
-    double diag_max = std::max(max_x, max_y);
+	double diag_min = min(min_x, min_y);
+	double diag_max = max(max_x, max_y);
 
-    std::vector<double> diag_x = { diag_min, diag_max };
-    std::vector<double> diag_y = { diag_min, diag_max };
-    plt::plot(diag_x, diag_y, { {"label", "y = x"}, {"color", "red"}, {"linestyle", "--"} });
+	vector<double> diag_x = { diag_min, diag_max };
+	vector<double> diag_y = { diag_min, diag_max };
+	plt::plot(diag_x, diag_y, { {"label", "y = x"}, {"color", "red"}, {"linestyle", "--"} });
 
-    // ×°ÊÎ
-    plt::xlabel("X");
-    plt::ylabel("Y");
-    plt::title("Scatter Plot with y = x");
-    plt::legend();
-    plt::grid(true);
-    plt::show();
+	plt::xlabel("X");
+	plt::ylabel("Y");
+	plt::title("Scatter Plot with y = x");
+	plt::legend();
+	plt::grid(true);
+	plt::show();
 }
 
 void GenePlot::plot_two_boxplot(
-    const std::vector<double>& y1,
-    const std::vector<double>& y2,
-    int width,
-    int height
+	const vector<double>& y1,
+	const vector<double>& y2,
+	int width,
+	int height
 ) {
-    plt::figure_size(width, height);
+	plt::figure_size(width, height);
 
-    // ½«Á½¸öÊı¾İÁĞ´ò°ü³É vector<vector<double>>
-    std::vector<std::vector<double>> all_data = { y1, y2 };
+	vector<vector<double>> all_data = { y1, y2 };
 
-    // »­ÏäÏßÍ¼
-    plt::boxplot(all_data);
+	plt::boxplot(all_data);
 
-    // Ìí¼Ó±êÇ©
-    plt::xticks(std::vector<double>{1, 2}, std::vector<std::string>{"Group 1", "Group 2"});
-    plt::title("Boxplot of Two Groups");
-    plt::grid(true);
-    plt::show();  // »ò plt::save("boxplot.png");
+	plt::xticks(vector<double>{1, 2}, vector<string>{"Group 1", "Group 2"});
+	plt::title("Boxplot of Two Groups");
+	plt::grid(true);
+	plt::show();  // æˆ– plt::save("boxplot.png");
 }
 
 void GenePlot::plot_heatmap(
-    const std::vector<std::vector<double>>& matrix,
-    bool show_colorbar ,
-    int width ,
-    int height 
+	const vector<vector<double>>& matrix,
+	bool show_colorbar,
+	int width,
+	int height
 ) {
-    // ³õÊ¼»¯ Python£¨Ö»µ÷ÓÃÒ»´Î£©
-    static auto& interp = plt::detail::_interpreter::get();
+	static auto& interp = plt::detail::_interpreter::get();
 
-    if (matrix.empty() || matrix[0].empty()) {
-        throw std::invalid_argument("Input matrix is empty.");
-    }
+	if (matrix.empty() || matrix[0].empty()) {
+		throw invalid_argument("Input matrix is empty.");
+	}
 
-    int rows = matrix.size();
-    int cols = matrix[0].size();
+	int rows = matrix.size();
+	int cols = matrix[0].size();
 
-    // ¼ì²éËùÓĞĞĞµÄ³¤¶ÈÒ»ÖÂ
-    for (const auto& row : matrix) {
-        if (row.size() != cols) {
-            throw std::invalid_argument("All rows in the matrix must have the same number of columns.");
-        }
-    }
+	// æ£€æŸ¥æ‰€æœ‰è¡Œçš„é•¿åº¦ä¸€è‡´
+	for (const auto& row : matrix) {
+		if (row.size() != cols) {
+			throw invalid_argument("All rows in the matrix must have the same number of columns.");
+		}
+	}
 
-    // À­Æ½ÎªÒ»Î¬Êı×é£¨°´ĞĞÓÅÏÈ£©
-    std::vector<float> flat_data;
-    flat_data.reserve(rows * cols);
-    for (const auto& row : matrix) {
-        flat_data.insert(flat_data.end(), row.begin(), row.end());
-    }
+	// æ‹‰å¹³
+	vector<float> flat_data;
+	flat_data.reserve(rows * cols);
+	for (const auto& row : matrix) {
+		flat_data.insert(flat_data.end(), row.begin(), row.end());
+	}
 
-    // »­Í¼£º×¢ÒâÕâÀï colors=1 ±íÊ¾»Ò¶ÈÍ¼
-    PyObject* im = nullptr;
-    plt::imshow(flat_data.data(), rows, cols, 1, { {"cmap", "PiYG"} }, &im);
+	PyObject* im = nullptr;
+	plt::imshow(flat_data.data(), rows, cols, 1, { {"cmap", "PiYG"} }, &im);
 
-    // ¿ÉÑ¡¼Ó colorbar
-    if (show_colorbar && im != nullptr) {
-        plt::colorbar(im);
-    }
+	if (show_colorbar && im != nullptr) {
+		plt::colorbar(im);
+	}
 
-    plt::title("Heatmap");
-    plt::show();
+	plt::title("Heatmap");
+	plt::show();
+}
+
+void GenePlot::showTwoBaseCompositionPieDialog(const Sequence& seq1,
+	const Sequence& seq2,
+	QWidget* parent)
+{
+	QFont jbMono("JetBrains Mono", 10);
+	static const QVector<QColor> pastel = {
+		QColor(0xFF, 0xB3, 0xBA),  // ç²‰
+		QColor(0xBA, 0xD2, 0xFF),  // è“
+		QColor(0xBA, 0xFF, 0xD2),  // ç»¿
+		QColor(0xFF, 0xE0, 0xBA)   // æ©™
+	};
+
+	auto makeChartView = [&](const Sequence& seq) -> QChartView* {
+		auto freq = seq.calculateBaseFrequency();
+		int len = seq.getLength();
+		const QString bases = "ACGT";
+
+		QPieSeries* series = new QPieSeries();
+
+		QVector<int> counts(4);
+		QVector<double> pcts(4);
+
+		for (int i = 0; i < 4; ++i) {
+			char base = bases[i].toLatin1();
+			int count = static_cast<int>(freq.at(base) * len + 0.5);
+			double pct = count * 100.0 / len;
+			counts[i] = count;
+			pcts[i] = pct;
+			series->append(QString("%1: %2%").arg(bases[i]).arg(QString::number(pct, 'f', 1)), count);
+		}
+
+		const auto slices = series->slices();
+		for (int i = 0; i < slices.size(); ++i) {
+			slices[i]->setLabel(QString("%1: %2%")
+				.arg(bases[i])
+				.arg(QString::number(pcts[i], 'f', 1)));
+			slices[i]->setBrush(pastel[i]);
+			slices[i]->setLabelFont(jbMono);
+			slices[i]->setLabelVisible(true);
+		}
+
+		// å›¾è¡¨
+		QChart* chart = new QChart();
+		chart->addSeries(series);
+		chart->setTitle(QString("Length=%1    MW=%2").arg(len).arg(seq.calculateMW()));
+		chart->setTitleFont(jbMono);
+
+		// å›¾ä¾‹
+		QLegend* legend = chart->legend();
+		legend->setFont(jbMono);
+		legend->setAlignment(Qt::AlignRight);
+		legend->setMaximumWidth(200);
+
+		const auto markers = legend->markers(series);
+		for (int i = 0; i < markers.size(); ++i) {
+			markers[i]->setLabel(QString("%1: %2")
+				.arg(bases[i])
+				.arg(counts[i]));
+		}
+
+		QChartView* view = new QChartView(chart);
+		view->setRenderHint(QPainter::Antialiasing);
+		view->setMinimumSize(400, 400);
+		return view;
+		};
+
+	// å¼¹å‡ºå¯¹è¯æ¡†
+	QDialog dlg(parent);
+	dlg.setWindowTitle("Base Composition Comparison");
+	dlg.resize(1500, 450);
+
+	QHBoxLayout* layout = new QHBoxLayout(&dlg);
+	layout->setContentsMargins(5, 5, 5, 5);
+	layout->addWidget(makeChartView(seq1));
+	layout->addWidget(makeChartView(seq2));
+
+	dlg.exec();
 }
