@@ -1,7 +1,9 @@
-#pragma once
-#ifndef ALIGNMENT_ALGORITHM_H
-#define ALIGNMENT_ALGORITHM_H
+ï»¿#pragma once
 
+//#ifndef ALIGNMENT_H
+//#define ALIGNMENT_H
+
+#include "stdafx.h"
 #include <string>
 #include <vector>
 #include <iostream>
@@ -9,97 +11,97 @@ using namespace std;
 
 /**
  * @class AlignmentAlgorithm
- * @brief ĞòÁĞ±È¶Ô»ùÀà£¬Ä£°å·½·¨Ä£Ê½
+ * @brief åºåˆ—æ¯”å¯¹åŸºç±»
  */
 class AlignmentAlgorithm {
 public:
-    /// ±È¶Ô×´Ì¬£ºFAIL=0, GAP=1, MATCH=2
-    enum State { FAIL = 0, GAP = 1, MATCH = 2 };
+	/// æ¯”å¯¹çŠ¶æ€ï¼šFAIL=0, GAP=1, MATCH=2
+	enum State { FAIL = 0, GAP = 1, MATCH = 2 };
 
-    AlignmentAlgorithm(
-        const string& seq1,
-        const string& seq2,
-        int match_score = +1,
-        int mismatch_score = -1,
-        int gap_open = -2,
-        int gap_extend = 0
-    );
+	AlignmentAlgorithm(
+		const string& seq1,
+		const string& seq2,
+		int match_score = +1,
+		int mismatch_score = -1,
+		int gap_open = -2,
+		int gap_extend = 0
+	);
 
-    virtual ~AlignmentAlgorithm();
+	virtual ~AlignmentAlgorithm();
 
-    void align();
+	void align();
 
-    // ½á¹û·ÃÎÊ 
-    void printColoredAlignment() const;
-    vector<pair<int, int>> getAlignmentPath() const;
-    vector<vector<double>> getHighlightedMatrix(double highlight = 100) const;
+	// ç»“æœè®¿é—® 
+	void printColoredAlignment() const;
+	vector<pair<int, int>> getAlignmentPath() const;
+	vector<vector<double>> getHighlightedMatrix(double highlight = 100) const;
 
-    const string& getAlignedSeq1() const;
-    const string& getAlignedSeq2() const;
-    const vector<int>& getSeq1State()   const;
-    const vector<int>& getSeq2State()   const;
-    const vector<vector<int>>& getMatrix() const;
+	const string& getAlignedSeq1() const;
+	const string& getAlignedSeq2() const;
+	const vector<int>& getSeq1State()   const;
+	const vector<int>& getSeq2State()   const;
+	const vector<vector<int>>& getMatrix() const;
 
 protected:
-    // Ğ£ÑéÊäÈëÊÇ·ñºÏ·¨
-    void validateInputs() const;
-    // ³õÊ¼»¯ DP ¾ØÕó±ß½ç
-    virtual void initMatrix() = 0;
-    // Ìî³ä DP ¾ØÕó
-    virtual void computeMatrix() = 0;
-    // »ØËİ¹¹½¨¶ÔÆëĞòÁĞ
-    virtual void traceback() = 0;
-    // ¸ù¾İ aligned_seq1_/aligned_seq2_ ¹¹½¨×´Ì¬ÏòÁ¿
-    void buildStates();
+	// æ ¡éªŒè¾“å…¥æ˜¯å¦åˆæ³•
+	void validateInputs() const;
+	// åˆå§‹åŒ– DP çŸ©é˜µè¾¹ç•Œ
+	virtual void initMatrix() = 0;
+	// å¡«å…… DP çŸ©é˜µ
+	virtual void computeMatrix() = 0;
+	// å›æº¯æ„å»ºå¯¹é½åºåˆ—
+	virtual void traceback() = 0;
+	// æ ¹æ® aligned_seq1_/aligned_seq2_ æ„å»ºçŠ¶æ€å‘é‡
+	void buildStates();
 
-    string seq1_, seq2_;
-    int match_score_, mismatch_score_, gap_open_, gap_extend_;
-    int m_, n_;  // ·Ö±ğÎª seq1_.length(), seq2_.length()
-    vector<vector<int>> M_;    // Ö÷ DP ¾ØÕó (m_+1)¡Á(n_+1)
-    string aligned_seq1_, aligned_seq2_;
-    vector<int> seq1_state_, seq2_state_;
+	string seq1_, seq2_;
+	int match_score_, mismatch_score_, gap_open_, gap_extend_;
+	int m_, n_;  // åˆ†åˆ«ä¸º seq1_.length(), seq2_.length()
+	vector<vector<int>> M_;    // ä¸» DP çŸ©é˜µ (m_+1)*(n_+1)
+	string aligned_seq1_, aligned_seq2_;
+	vector<int> seq1_state_, seq2_state_;
 };
 
-/** È«¾Ö±È¶Ô£ºNeedleman¨CWunsch Ëã·¨ */
+/** å…¨å±€æ¯”å¯¹ï¼šNeedlemanâ€“Wunsch ç®—æ³• */
 class NeedlemanWunsch : public AlignmentAlgorithm {
 public:
-    using AlignmentAlgorithm::AlignmentAlgorithm;
+	using AlignmentAlgorithm::AlignmentAlgorithm;
 protected:
-    void initMatrix()    override;
-    void computeMatrix() override;
-    void traceback()     override;
+	void initMatrix()    override;
+	void computeMatrix() override;
+	void traceback()     override;
 };
 
-/** ¾Ö²¿±È¶Ô£ºSmith¨CWaterman Ëã·¨ */
+/** å±€éƒ¨æ¯”å¯¹ï¼šSmithâ€“Waterman ç®—æ³• */
 class SmithWaterman : public AlignmentAlgorithm {
 public:
-    using AlignmentAlgorithm::AlignmentAlgorithm;
+	using AlignmentAlgorithm::AlignmentAlgorithm;
 protected:
-    void initMatrix()    override;
-    void computeMatrix() override;
-    void traceback()     override;
+	void initMatrix()    override;
+	void computeMatrix() override;
+	void traceback()     override;
 };
 
-/** ·ÂÉäÈ±¿Ú·£·Ö£ºGotoh Ëã·¨ */
+/** ä»¿å°„ç¼ºå£ç½šåˆ†ï¼šGotoh ç®—æ³• */
 class Gotoh : public AlignmentAlgorithm {
 public:
-    using AlignmentAlgorithm::AlignmentAlgorithm;
+	using AlignmentAlgorithm::AlignmentAlgorithm;
 protected:
-    void initMatrix()    override;
-    void computeMatrix() override;
-    void traceback()     override;
+	void initMatrix()    override;
+	void computeMatrix() override;
+	void traceback()     override;
 private:
-    vector<vector<int>> Ix_, Iy_;  // ·Ö±ğ¼ÇÂ¼ÔÚ seq1/seq2 ÉÏµÄ gap ·ÖÖ§
+	vector<vector<int>> Ix_, Iy_;  // åˆ†åˆ«è®°å½•åœ¨ seq1/seq2 ä¸Šçš„ gap åˆ†æ”¯
 };
 
-/** ÏßĞÔ¿Õ¼ä£ºHirschberg Ëã·¨ */
+/** çº¿æ€§ç©ºé—´ï¼šHirschberg ç®—æ³• */
 class Hirschberg : public AlignmentAlgorithm {
 public:
-    using AlignmentAlgorithm::AlignmentAlgorithm;
+	using AlignmentAlgorithm::AlignmentAlgorithm;
 protected:
-    void initMatrix()    override;
-    void computeMatrix() override;
-    void traceback()     override;
+	void initMatrix()    override;
+	void computeMatrix() override;
+	void traceback()     override;
 };
 
-#endif // ALIGNMENT_ALGORITHM_H
+//#endif  // ALIGNMENT_ALGORITHM_H
