@@ -1,5 +1,6 @@
-#pragma once
+ï»¿#pragma once
 
+#include "stdafx.h"
 #ifndef BCMATRIX_H
 #define BCMATRIX_H
 
@@ -13,103 +14,116 @@ using namespace std;
 class BCmatrix
 {
 private:
-    size_t row;
-    size_t column;
-    vector<string> row_lst;
-    vector<string> column_lst;
-    vector<BCarray<double>> value;
-    vector<int> group;
+	size_t row;
+	size_t column;
+	vector<string> row_lst;
+	vector<string> column_lst;
+	vector<BCarray<double>> value;
+	// ç”¨æ¥åˆ’åˆ†å®éªŒç»„å’Œå¯¹ç…§ç»„
+	vector<int> group;
 
-    // ¼ì²éĞĞÊı/ÁĞÊıÊÇ·ñÏàµÈ
-    void _checkRowEqual(int size) const;
-    void _checkColumnEqual(int size) const;
+	// æ£€æŸ¥è¡Œæ•°/åˆ—æ•°æ˜¯å¦ç›¸ç­‰
+	void _checkRowEqual(int size) const;
+	void _checkColumnEqual(int size) const;
 
-    // ¼ì²éĞĞ/ÁĞË÷ÒıÊÇ·ñÔ½½ç
-    void _checkRowRange(int index) const;
-    void _checkColumnRange(int index) const;
+	// æ£€æŸ¥è¡Œ/åˆ—ç´¢å¼•æ˜¯å¦è¶Šç•Œ
+	void _checkRowRange(int index) const;
+	void _checkColumnRange(int index) const;
 
 public:
-    BCmatrix();
-    BCmatrix(size_t row, size_t column);
+	BCmatrix();
+	BCmatrix(size_t row, size_t column);
 
-    // µÃµ½valueºÍgroup
-    vector<BCarray<double>> getValue() const;
-    vector<vector<double>> getPureValue() const;
-    vector<int> getGroup() const;
+	// å¾—åˆ°valueå’Œgroup
+	vector<BCarray<double>> getValue() const;
+	vector<vector<double>> getPureValue() const;
+	vector<int> getGroup() const;
 
-    // »ñÈ¡ĞĞÊıºÍÁĞÊı
-    int getRowCount() const;
-    int getColumnCount() const;
-    pair<int, int> getShape() const;
+	// è·å–è¡Œæ•°å’Œåˆ—æ•°
+	int getRowCount() const;
+	int getColumnCount() const;
+	pair<int, int> getShape() const;
 
-    // »ñÈ¡ĞĞÃûºÍÁĞÃû
-    vector<string> getRowName() const;
-    vector<string> getColumnName() const;
+	// è·å–è¡Œåå’Œåˆ—å
+	vector<string> getRowName() const;
+	vector<string> getColumnName() const;
 
-    // »ñÈ¡ĞĞºÍÁĞ
-    BCarray<double> getRow(size_t row) const;
-    BCarray<double> getColumn(size_t column) const;
+	// è·å–è¡Œå’Œåˆ—
+	BCarray<double> getRow(size_t row) const;
+	BCmatrix sliceRows(size_t start_index, size_t end_index) const; // ç”¨æ¥å–ç‰¹å®šçš„è¡Œæ•°
+	BCarray<double> getColumn(size_t column) const;
 
-    // ¸ù¾İĞĞºÍÁĞË÷Òı»ñÈ¡ÔªËØ
-    double &iloc(size_t row, size_t column);
-    double iloc(size_t row, size_t column) const;
+	// æ ¹æ®è¡Œå’Œåˆ—ç´¢å¼•è·å–å…ƒç´ 
+	double& iloc(size_t row, size_t column);
+	double iloc(size_t row, size_t column) const;
 
-    // ¸ù¾İĞĞÃûºÍÁĞÃû»ñÈ¡Ë÷Òı
-    int findRow(string rowName) const;
-    int findColumn(string columnName) const;
+	// æ ¹æ®è¡Œåå’Œåˆ—åè·å–ç´¢å¼•
+	int findRow(string rowName) const;
+	int findColumn(string columnName) const;
 
-    // ¸ù¾İĞĞÃûºÍÁĞÃû»ñÈ¡ÔªËØ
-    double &loc(string rowName, string columnName);
-    double loc(string rowName, string columnName) const;
+	// æ ¹æ®è¡Œåå’Œåˆ—åè·å–å…ƒç´ 
+	double& loc(string rowName, string columnName);
+	double loc(string rowName, string columnName) const;
 
-    // ÖØÔØ()£¬¸ù¾İĞĞÁĞË÷Òı/Ãû »ñµÃÔªËØ
-    double &operator()(size_t row, size_t column);
-    double operator()(size_t row, size_t column) const;
-    double &operator()(string rowName, string columnName);
-    double operator()(string rowName, string columnName) const;
+	// é‡è½½()ï¼Œæ ¹æ®è¡Œåˆ—ç´¢å¼•/å è·å¾—å…ƒç´ 
+	double& operator()(size_t row, size_t column);
+	double operator()(size_t row, size_t column) const;
+	double& operator()(string rowName, string columnName);
+	double operator()(string rowName, string columnName) const;
 
-    // ÖØÔØ()£¬¸ù¾İĞĞÁĞË÷Òı/Ãû »ñµÃĞĞ/ÁĞ
-    // mod = 'r' ±íÊ¾»ñÈ¡ĞĞ£¬mod = 'c' ±íÊ¾»ñÈ¡ÁĞ
-    BCarray<double> operator()(size_t index, char mod = 'r') const;
-    BCarray<double> operator()(string name, char mod = 'r') const;
+	// é‡è½½()ï¼Œæ ¹æ®è¡Œåˆ—ç´¢å¼•/å è·å¾—è¡Œ/åˆ—
+	// mod = 'r' è¡¨ç¤ºè·å–è¡Œï¼Œmod = 'c' è¡¨ç¤ºè·å–åˆ—
+	BCarray<double> operator()(size_t index, char mod = 'r') const;
+	BCarray<double> operator()(string name, char mod = 'r') const;
 
-    // ÉèÖÃĞĞÃûºÍÁĞÃû
-    void setRowName(size_t index, string name);
-    void setColumnName(size_t index, string name);
+	// è®¾ç½®è¡Œåå’Œåˆ—å
+	void setRowName(size_t index, string name);
+	void setColumnName(size_t index, string name);
 
-    // É¾³ıĞĞºÍÁĞ
-    void deleteRow(size_t index);
-    void deleteColumn(size_t index);
+	// åˆ é™¤è¡Œå’Œåˆ—
+	void deleteRow(size_t index);
+	void deleteColumn(size_t index);
 
-    // Ìí¼ÓĞĞºÍÁĞ
-    void addRow(const BCarray<double> &newRow, string name = "");
-    void addColumn(const BCarray<double> &newColumn, string name = "");
+	// æ·»åŠ è¡Œå’Œåˆ—
+	void addRow(const BCarray<double>& newRow, string name = "");
+	void addColumn(const BCarray<double>& newColumn, string name = "");
 
-    // ÊµÏÖºÍ±êÁ¿µÄËÄÔòÔËËã
-    BCmatrix operator+(const double &scalar);
-    BCmatrix operator-(const double &scalar);
-    BCmatrix operator*(const double &scalar);
-    BCmatrix operator/(const double &scalar);
+	// å®ç°å’Œæ ‡é‡çš„å››åˆ™è¿ç®—
+	BCmatrix operator+(const double& scalar);
+	BCmatrix operator-(const double& scalar);
+	BCmatrix operator*(const double& scalar);
+	BCmatrix operator/(const double& scalar);
 
-    // ÊµÏÖºÍÏòÁ¿µÄËÄÔòÔËËã£¨×¢ÒâĞĞÏòÁ¿ºÍÁĞÏòÁ¿£©
-    BCmatrix operator+(const BCarray<double> &vec);
-    BCmatrix operator-(const BCarray<double> &vec);
-    BCmatrix operator*(const BCarray<double> &vec);
-    BCmatrix operator/(const BCarray<double> &vec);
+	// å®ç°å’Œå‘é‡çš„å››åˆ™è¿ç®—ï¼ˆæ³¨æ„è¡Œå‘é‡å’Œåˆ—å‘é‡ï¼‰
+	BCmatrix operator+(const BCarray<double>& vec);
+	BCmatrix operator-(const BCarray<double>& vec);
+	BCmatrix operator*(const BCarray<double>& vec);
+	BCmatrix operator/(const BCarray<double>& vec);
 
-    // ÓÃÓÚÇå¿ÕºÍ¼ÓÔØĞÂµÄÊı¾İ
-    void clear();
-    void load_data(const string &filename);
-    void load_group(const string &filename);
-    // µ¼³öÊı¾İ
-    void to_csv(const string &filename) const;
-    std::vector<std::vector<double>> values() const;
+	// ç”¨äºæ¸…ç©ºå’ŒåŠ è½½æ–°çš„æ•°æ®
+	void clear();
+	void load_data(const string& filename);
+	void load_group(const string& filename);
+	void set_group(const vector<int> gp);
+	// å¯¼å‡ºæ•°æ®
+	void to_csv(const string& filename) const;
+	vector<vector<double>> values() const;
 
-    // Êı¾İ¹éÒ»»¯
-    void normalize(const string &method = "zscore", const string &axis = "column");
+	// æ•°æ®å½’ä¸€åŒ–
+	void normalize(const string& method = "zscore", const string& axis = "column");
 
-    // ½øĞĞt-test
-    BCmatrix t_test();
+	// è¿›è¡Œt-test
+	BCmatrix t_test();
+	BCmatrix deseq2();
+
+	// é™ç»´
+	BCmatrix performPCA(int num_components = 2) const;
+	BCmatrix performLLE(int n_neighbors, int dim, double reg = 1e-3) const;
+	BCmatrix performTSNE(int dim = 2, double perplexity = 30.0, int max_iter = 1000, double lr = 200.0) const;
+
+	// æè¿°
+	BCmatrix describe(const string& axis = "column") const;
+
 };
 
 #endif

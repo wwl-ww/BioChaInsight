@@ -1,5 +1,6 @@
-#pragma once
+ï»¿#pragma once
 
+#include "stdafx.h"
 #ifndef BCARRAY_H
 #define BCARRAY_H
 
@@ -10,445 +11,446 @@ using namespace std;
 #include <algorithm>
 #include "ST.h"
 
-// ¼Ì³Ğvector£¬ÔÙĞ´Ò»¸öÀà£¬ÊµÏÖÒ»Ğ©ĞÂµÄ¹¦ÄÜ
-// ÔÚvectorµÄ»ù´¡ÉÏ£¬¼ÓÈë´óÁ¿µÄÍ³¼Æ¹¦ÄÜ
-// ÒÔ¼°ÖØÔØÒ»Ğ©ÔËËã·û£¬»¹Òª½øĞĞ¹ã²¥²Ù×÷
 template <typename T>
 class BCarray : public vector<T>
 {
 private:
-    bool is_row_vector = true; // ÊÇ·ñÊÇĞĞÏòÁ¿
+	bool is_row_vector = true; // æ˜¯å¦æ˜¯è¡Œå‘é‡
 
 public:
-    // ¹¹Ôìº¯Êı
-    BCarray() : vector<T>(), is_row_vector(true) {}
+	// æ„é€ å‡½æ•°
+	BCarray() : vector<T>(), is_row_vector(true) {}
 
-    BCarray(const vector<T> &vec, bool is_row_vector = true) : vector<T>(vec), is_row_vector(is_row_vector) {}
+	BCarray(const vector<T>& vec, bool is_row_vector = true) : vector<T>(vec), is_row_vector(is_row_vector) {}
 
-    BCarray(size_t count, const T &value = T(), bool is_row_vector = true) : vector<T>(count, value), is_row_vector(is_row_vector) {}
+	BCarray(size_t count, const T& value = T(), bool is_row_vector = true) : vector<T>(count, value), is_row_vector(is_row_vector) {}
 
-    BCarray(T array[], size_t size, bool is_row_vector = true)
-    {
-        this->assign(array, array + size);
-        this->is_row_vector = is_row_vector;
-    }
+	BCarray(T array[], size_t size, bool is_row_vector = true)
+	{
+		this->assign(array, array + size);
+		this->is_row_vector = is_row_vector;
+	}
 
-    bool isRowVector() const;
+	// åˆ¤æ–­è¡Œåˆ—å‘é‡
+	bool isRowVector() const;
 
-    /*Í³¼Æº¯Êı*/
-    // ¼ì²éÊÇ·ñÓĞÖØ¸´Öµ
-    bool hasDuplicates() const;
-    // ¼ÆËãºÍ
-    T sum() const;
-    // ¼ÆËã×î´óÖµ
-    T max() const;
-    // ¼ÆËã×îĞ¡Öµ
-    T min() const;
-    // ¼ÆËã¾ùÖµ
-    double mean() const;
-    // ¼ÆËã·¶Êı
-    double norm(int ord = 2) const;
-    // ¼ÆËãÖĞÎ»Êı
-    T median() const;
-    // ×ÜÌå·½²î
-    double populationVar() const;
-    // Ñù±¾·½²î
-    double sampleVar() const;
-    // ×ÜÌå·½²î »ò Ñù±¾·½²î
-    double var(bool isSample = false) const;
-    // ×ÜÌå±ê×¼²î
-    double populationStd() const;
-    // Ñù±¾±ê×¼²î
-    double sampleStd() const;
-    // ×ÜÌå±ê×¼²î »ò Ñù±¾±ê×¼²î
-    double std(bool isSample = false) const;
-    // Æ«¶È
-    double skewness() const;
-    // ·å¶È
-    double kurtosis() const;
-    // ¼ÆËã°Ù·ÖÎ»Êı
-    double percentile(double p) const;
-    // ÖÚÊı
-    T mode() const;
-    // ¼ÆËãĞ­·½²î
-    double covariance(const BCarray<T> &vec, bool isSample = false) const;
-    // ¼ÆËãÏà¹ØÏµÊı
-    double correlation(const BCarray<T> &vec) const;
-    // ´òÓ¡Í³¼ÆĞÅÏ¢
-    void info() const;
+	/*ç»Ÿè®¡å‡½æ•°*/
+	// æ£€æŸ¥æ˜¯å¦æœ‰é‡å¤å€¼
+	bool hasDuplicates() const;
+	// è®¡ç®—å’Œ
+	T sum() const;
+	// è®¡ç®—æœ€å¤§å€¼
+	T max() const;
+	// è®¡ç®—æœ€å°å€¼
+	T min() const;
+	// è®¡ç®—å‡å€¼
+	double mean() const;
+	// è®¡ç®—èŒƒæ•°
+	double norm(int ord = 2) const;
+	// è®¡ç®—ä¸­ä½æ•°
+	T median() const;
+	// æ€»ä½“æ–¹å·®
+	double populationVar() const;
+	// æ ·æœ¬æ–¹å·®
+	double sampleVar() const;
+	// æ€»ä½“æ–¹å·® æˆ– æ ·æœ¬æ–¹å·®
+	double var(bool isSample = false) const;
+	// æ€»ä½“æ ‡å‡†å·®
+	double populationStd() const;
+	// æ ·æœ¬æ ‡å‡†å·®
+	double sampleStd() const;
+	// æ€»ä½“æ ‡å‡†å·® æˆ– æ ·æœ¬æ ‡å‡†å·®
+	double std(bool isSample = false) const;
+	// ååº¦
+	double skewness() const;
+	// å³°åº¦
+	double kurtosis() const;
+	// è®¡ç®—ç™¾åˆ†ä½æ•°
+	double percentile(double p) const;
+	// ä¼—æ•°
+	T mode() const;
+	// è®¡ç®—åæ–¹å·®
+	double covariance(const BCarray<T>& vec, bool isSample = false) const;
+	// è®¡ç®—ç›¸å…³ç³»æ•°
+	double correlation(const BCarray<T>& vec) const;
+	// æ‰“å°ç»Ÿè®¡ä¿¡æ¯
+	void info() const;
 
-    /*Ò»ÏµÁĞÖØÔØ*/
-    friend ostream &operator<< <T>(ostream &os, const BCarray<T> &vec);
-    BCarray operator+(const BCarray<T> &vec2) const;
-    BCarray operator+(const T &scalar) const;
-    BCarray operator-(const BCarray<T> &vec2) const;
-    BCarray operator-(const T &scalar) const;
-    BCarray operator-() const;
-    BCarray operator*(const BCarray<T> &vec2) const;
-    BCarray operator*(const T &scalar) const;
-    BCarray operator/(const BCarray<T> &vec2) const;
-    BCarray operator/(const T &scalar) const;
-    BCarray operator&&(const BCarray<T> &vec2) const;
-    BCarray operator&&(const bool &scalar) const;
-    BCarray operator||(const BCarray<T> &vec2) const;
-    BCarray operator||(const bool &scalar) const;
-    BCarray operator!() const;
+	/*ä¸€ç³»åˆ—é‡è½½*/
+	//friend ostream& operator<< <T>(ostream& os, const BCarray<T>& vec);
+	BCarray operator+(const BCarray<T>& vec2) const;
+	BCarray operator+(const T& scalar) const;
+	BCarray operator-(const BCarray<T>& vec2) const;
+	BCarray operator-(const T& scalar) const;
+	BCarray operator-() const;
+	BCarray operator*(const BCarray<T>& vec2) const;
+	BCarray operator*(const T& scalar) const;
+	BCarray operator/(const BCarray<T>& vec2) const;
+	BCarray operator/(const T& scalar) const;
+	BCarray operator&&(const BCarray<T>& vec2) const;
+	BCarray operator&&(const bool& scalar) const;
+	BCarray operator||(const BCarray<T>& vec2) const;
+	BCarray operator||(const bool& scalar) const;
+	BCarray operator!() const;
 
-    /*Ò»Ğ©ÊıÑ§º¯Êı*/
-    // ½øĞĞÈÎÒâµÄ×Ô¶¨Òåº¯Êı
-    template <typename U>
-    BCarray<U> apply(function<U(const T &)>);
-    // ÅÅĞò
-    BCarray<T> sort(bool ascending = true);
-    // BCarray<size_t> argsort(ascending = true);
-    void sort_(bool ascending = true);
-    // ÄÚ»ı
-    T dot(const BCarray<T> &vec);
-    // ×ªÖÃ¡£Ò»°ã¶¼ÊÇĞĞÏòÁ¿£¬ÏÔÊ¾µÄ.T()¾Í»áÊÇÁĞÏòÁ¿
-    BCarray<T> t() const;
+	/*ä¸€äº›æ•°å­¦å‡½æ•°*/
+	// è¿›è¡Œä»»æ„çš„è‡ªå®šä¹‰å‡½æ•°
+	template <typename U>
+	BCarray<U> apply(function<U(const T&)>);
+	// æ’åº
+	BCarray<T> sort(bool ascending = true);
+	// BCarray<size_t> argsort(ascending = true);
+	void sort_(bool ascending = true);
+	// å†…ç§¯
+	T dot(const BCarray<T>& vec);
+	// è½¬ç½®ã€‚ä¸€èˆ¬éƒ½æ˜¯è¡Œå‘é‡ï¼Œæ˜¾ç¤ºçš„.T()å°±ä¼šæ˜¯åˆ—å‘é‡
+	BCarray<T> t() const;
 
-    // ¸÷ÖÖ±ê×¼»¯
-    BCarray<T> L2Normalize() const;
-    BCarray<T> minMaxNormalize() const;
-    BCarray<T> zScoreNormalize() const;
-    BCarray<T> centralize() const;
-    BCarray<T> normalize(string method = "L2") const;
+	// å„ç§æ ‡å‡†åŒ–
+	// åšæ ‡å‡†åŒ–ï¼Œå¹¶è¿”å›æ ‡å‡†åŒ–çš„å€¼
+	BCarray<T> L2Normalize() const;
+	BCarray<T> minMaxNormalize() const;
+	BCarray<T> zScoreNormalize() const;
+	BCarray<T> centralize() const;
+	BCarray<T> normalize(string method = "L2") const;
+	// å¯¹è‡ªèº«åšæ ‡å‡†åŒ–
+	void L2Normalize_();
+	void minMaxNormalize_();
+	void zScoreNormalize_();
+	void centralize_();
+	void normalize_(string method = "L2");
 
-    void L2Normalize_();
-    void minMaxNormalize_();
-    void zScoreNormalize_();
-    void centralize_();
-    void normalize_(string method = "L2");
-
-    // ²ğ·ÖÊµÑé×éºÍ¶ÔÕÕ×é
-    pair<BCarray<T>, BCarray<T>> split(vector<int> &group);
+	// æ‹†åˆ†å®éªŒç»„å’Œå¯¹ç…§ç»„
+	pair<BCarray<T>, BCarray<T>> split(vector<int>& group) const;
+	// è½¬ä¸ºvector<double>
+	operator vector<double>() const;
 };
 
-// ÊµÏÖ
+// å®ç°
 template <typename T>
 bool BCarray<T>::isRowVector() const
 {
-    return is_row_vector;
+	return is_row_vector;
 }
 
 template <typename T>
 bool BCarray<T>::hasDuplicates() const
 {
-    return StatTools::hasDuplicates(*this);
+	return StatTools::hasDuplicates(*this);
 }
 
 template <typename T>
 T BCarray<T>::sum() const
 {
-    return StatTools::sum(*this);
+	return StatTools::sum(*this);
 }
 
 template <typename T>
 T BCarray<T>::max() const
 {
-    return StatTools::max(*this);
+	return StatTools::max(*this);
 }
 
 template <typename T>
 T BCarray<T>::min() const
 {
-    return StatTools::min(*this);
+	return StatTools::min(*this);
 }
 
 template <typename T>
 double BCarray<T>::mean() const
 {
-    return StatTools::mean(*this);
+	return StatTools::mean(*this);
 }
 
 template <typename T>
 double BCarray<T>::norm(int ord) const
 {
-    return StatTools::norm(*this, ord);
+	return StatTools::norm(*this, ord);
 }
 
 template <typename T>
 T BCarray<T>::median() const
 {
-    return StatTools::median(*this);
+	return StatTools::median(*this);
 }
 
 template <typename T>
 double BCarray<T>::populationVar() const
 {
-    return StatTools::populationVar(*this);
+	return StatTools::populationVar(*this);
 }
 
 template <typename T>
 double BCarray<T>::sampleVar() const
 {
-    return StatTools::sampleVar(*this);
+	return StatTools::sampleVar(*this);
 }
 
 template <typename T>
 double BCarray<T>::var(bool isSample) const
 {
-    return StatTools::var(*this, isSample);
+	return StatTools::var(*this, isSample);
 }
 
 template <typename T>
 double BCarray<T>::populationStd() const
 {
-    return StatTools::populationStd(*this);
+	return StatTools::populationStd(*this);
 }
 
 template <typename T>
 double BCarray<T>::sampleStd() const
 {
-    return StatTools::sampleStd(*this);
+	return StatTools::sampleStd(*this);
 }
 
 template <typename T>
 double BCarray<T>::std(bool isSample) const
 {
-    return StatTools::std(*this, isSample);
+	return StatTools::std(*this, isSample);
 }
 
 template <typename T>
 double BCarray<T>::skewness() const
 {
-    return StatTools::skewness(*this);
+	return StatTools::skewness(*this);
 }
 
 template <typename T>
 double BCarray<T>::kurtosis() const
 {
-    return StatTools::kurtosis(*this);
+	return StatTools::kurtosis(*this);
 }
 
 template <typename T>
 double BCarray<T>::percentile(double p) const
 {
-    return StatTools::percentile(*this, p);
+	return StatTools::percentile(*this, p);
 }
 
 template <typename T>
 T BCarray<T>::mode() const
 {
-    return StatTools::mode(*this);
+	return StatTools::mode(*this);
 }
 
 template <typename T>
-double BCarray<T>::covariance(const BCarray<T> &vec, bool isSample) const
+double BCarray<T>::covariance(const BCarray<T>& vec, bool isSample) const
 {
-    return StatTools::covariance(*this, vec, isSample);
+	return StatTools::covariance(*this, vec, isSample);
 }
 
 template <typename T>
-double BCarray<T>::correlation(const BCarray<T> &vec) const
+double BCarray<T>::correlation(const BCarray<T>& vec) const
 {
-    return StatTools::correlation(*this, vec);
+	return StatTools::correlation(*this, vec);
 }
 
 template <typename T>
 void BCarray<T>::info() const
 {
-    // ´òÓ¡¸÷ÖÖÍ³¼ÆĞÅÏ¢
-    cout << "size:\t" << this->size() << endl;
-    cout << "mean:\t" << mean() << endl;
-    cout << "mode:\t" << mode() << endl;
+	// æ‰“å°å„ç§ç»Ÿè®¡ä¿¡æ¯
+	cout << "size:\t" << this->size() << endl;
+	cout << "mean:\t" << mean() << endl;
+	cout << "mode:\t" << mode() << endl;
 
-    cout << "min:\t" << min() << endl;
-    cout << "25th percentile:\t" << percentile(0.25) << endl;
-    cout << "median:\t" << median() << endl;
-    cout << "75th percentile:\t" << percentile(0.75) << endl;
-    cout << "max:\t" << max() << endl;
+	cout << "min:\t" << min() << endl;
+	cout << "25th percentile:\t" << percentile(0.25) << endl;
+	cout << "median:\t" << median() << endl;
+	cout << "75th percentile:\t" << percentile(0.75) << endl;
+	cout << "max:\t" << max() << endl;
 
-    cout << "variance:\t" << var() << endl;
-    cout << "standard deviation:\t" << std() << endl;
-    cout << "skewness:\t" << skewness() << endl;
-    cout << "kurtosis:\t" << kurtosis() << endl;
-    cout << endl;
+	cout << "variance:\t" << var() << endl;
+	cout << "standard deviation:\t" << std() << endl;
+	cout << "skewness:\t" << skewness() << endl;
+	cout << "kurtosis:\t" << kurtosis() << endl;
+	cout << endl;
+}
+
+//template <typename T>
+//ostream& operator<<(ostream& os, const BCarray<T>& vec)
+//{
+//    os << "BCarray:\t";
+//    os << "[";
+//    for (size_t i = 0; i < vec.size(); ++i)
+//    {
+//        os << vec[i];
+//        if (i != vec.size() - 1)
+//        {
+//            os << ", ";
+//        }
+//    }
+//    os << "]";
+//    // è¾“å‡ºæ•°æ®ç±»å‹
+//    os << "\ttype: " << typeid(T).name();
+//    return os;
+//}
+
+template <typename T>
+BCarray<T> BCarray<T>::operator+(const BCarray<T>& vec2) const
+{
+	BCarray<T> res(this->size());
+	for (size_t i = 0; i < this->size(); ++i)
+	{
+		res[i] = (*this)[i] + vec2[i];
+	}
+	return res;
 }
 
 template <typename T>
-ostream &operator<<(ostream &os, const BCarray<T> &vec)
+BCarray<T> BCarray<T>::operator+(const T& scalar) const
 {
-    os << "BCarray:\t";
-    os << "[";
-    for (size_t i = 0; i < vec.size(); ++i)
-    {
-        os << vec[i];
-        if (i != vec.size() - 1)
-        {
-            os << ", ";
-        }
-    }
-    os << "]";
-    // Êä³öÊı¾İÀàĞÍ
-    os << "\ttype: " << typeid(T).name();
-    return os;
+	BCarray<T> res(*this);
+	for (size_t i = 0; i < res.size(); ++i)
+	{
+		res[i] += scalar;
+	}
+	return res;
 }
 
 template <typename T>
-BCarray<T> BCarray<T>::operator+(const BCarray<T> &vec2) const
+BCarray<T> BCarray<T>::operator-(const BCarray<T>& vec2) const
 {
-    BCarray<T> res(this->size());
-    for (size_t i = 0; i < this->size(); ++i)
-    {
-        res[i] = (*this)[i] + vec2[i];
-    }
-    return res;
+	BCarray<T> res(this->size());
+	for (size_t i = 0; i < this->size(); ++i)
+	{
+		res[i] = (*this)[i] - vec2[i];
+	}
+	return res;
 }
 
 template <typename T>
-BCarray<T> BCarray<T>::operator+(const T &scalar) const
+BCarray<T> BCarray<T>::operator-(const T& scalar) const
 {
-    BCarray<T> res(*this);
-    for (size_t i = 0; i < res.size(); ++i)
-    {
-        res[i] += scalar;
-    }
-    return res;
-}
-
-template <typename T>
-BCarray<T> BCarray<T>::operator-(const BCarray<T> &vec2) const
-{
-    BCarray<T> res(this->size());
-    for (size_t i = 0; i < this->size(); ++i)
-    {
-        res[i] = (*this)[i] - vec2[i];
-    }
-    return res;
-}
-
-template <typename T>
-BCarray<T> BCarray<T>::operator-(const T &scalar) const
-{
-    BCarray<T> res(*this);
-    for (size_t i = 0; i < res.size(); ++i)
-    {
-        res[i] -= scalar;
-    }
-    return res;
+	BCarray<T> res(*this);
+	for (size_t i = 0; i < res.size(); ++i)
+	{
+		res[i] -= scalar;
+	}
+	return res;
 }
 
 template <typename T>
 BCarray<T> BCarray<T>::operator-() const
 {
-    BCarray<T> res(this->size());
-    for (size_t i = 0; i < this->size(); ++i)
-    {
-        res[i] = -(*this)[i];
-    }
-    return res;
+	BCarray<T> res(this->size());
+	for (size_t i = 0; i < this->size(); ++i)
+	{
+		res[i] = -(*this)[i];
+	}
+	return res;
 }
 
 template <typename T>
-BCarray<T> BCarray<T>::operator*(const BCarray<T> &vec2) const
+BCarray<T> BCarray<T>::operator*(const BCarray<T>& vec2) const
 {
-    BCarray<T> res(this->size());
-    for (size_t i = 0; i < this->size(); ++i)
-    {
-        res[i] = (*this)[i] * vec2[i];
-    }
-    return res;
+	BCarray<T> res(this->size());
+	for (size_t i = 0; i < this->size(); ++i)
+	{
+		res[i] = (*this)[i] * vec2[i];
+	}
+	return res;
 }
 
 template <typename T>
-BCarray<T> BCarray<T>::operator*(const T &scalar) const
+BCarray<T> BCarray<T>::operator*(const T& scalar) const
 {
-    BCarray<T> res(*this);
-    for (size_t i = 0; i < res.size(); ++i)
-    {
-        res[i] *= scalar;
-    }
-    return res;
+	BCarray<T> res(*this);
+	for (size_t i = 0; i < res.size(); ++i)
+	{
+		res[i] *= scalar;
+	}
+	return res;
 }
 
 template <typename T>
-BCarray<T> BCarray<T>::operator/(const BCarray<T> &vec2) const
+BCarray<T> BCarray<T>::operator/(const BCarray<T>& vec2) const
 {
-    BCarray<T> res(this->size());
-    for (size_t i = 0; i < this->size(); ++i)
-    {
-        res[i] = (*this)[i] / vec2[i];
-    }
-    return res;
+	BCarray<T> res(this->size());
+	for (size_t i = 0; i < this->size(); ++i)
+	{
+		res[i] = (*this)[i] / vec2[i];
+	}
+	return res;
 }
 
 template <typename T>
-BCarray<T> BCarray<T>::operator/(const T &scalar) const
+BCarray<T> BCarray<T>::operator/(const T& scalar) const
 {
-    BCarray<T> res(*this);
-    for (size_t i = 0; i < res.size(); ++i)
-    {
-        res[i] /= scalar;
-    }
-    return res;
+	BCarray<T> res(*this);
+	for (size_t i = 0; i < res.size(); ++i)
+	{
+		res[i] /= scalar;
+	}
+	return res;
 }
 
 template <typename T>
-BCarray<T> BCarray<T>::operator&&(const BCarray<T> &vec2) const
+BCarray<T> BCarray<T>::operator&&(const BCarray<T>& vec2) const
 {
-    BCarray<T> res(this->size());
-    for (size_t i = 0; i < this->size(); ++i)
-    {
-        res[i] = (*this)[i] && vec2[i];
-    }
-    return res;
+	BCarray<T> res(this->size());
+	for (size_t i = 0; i < this->size(); ++i)
+	{
+		res[i] = (*this)[i] && vec2[i];
+	}
+	return res;
 }
 
 template <typename T>
-BCarray<T> BCarray<T>::operator&&(const bool &scalar) const
+BCarray<T> BCarray<T>::operator&&(const bool& scalar) const
 {
-    BCarray<T> res(this->size());
-    for (size_t i = 0; i < this->size(); ++i)
-    {
-        res[i] = (*this)[i] && scalar;
-    }
-    return res;
+	BCarray<T> res(this->size());
+	for (size_t i = 0; i < this->size(); ++i)
+	{
+		res[i] = (*this)[i] && scalar;
+	}
+	return res;
 }
 
 template <typename T>
-BCarray<T> BCarray<T>::operator||(const BCarray<T> &vec2) const
+BCarray<T> BCarray<T>::operator||(const BCarray<T>& vec2) const
 {
-    BCarray<T> res(this->size());
-    for (size_t i = 0; i < this->size(); ++i)
-    {
-        res[i] = (*this)[i] || vec2[i];
-    }
-    return res;
+	BCarray<T> res(this->size());
+	for (size_t i = 0; i < this->size(); ++i)
+	{
+		res[i] = (*this)[i] || vec2[i];
+	}
+	return res;
 }
 
 template <typename T>
-BCarray<T> BCarray<T>::operator||(const bool &scalar) const
+BCarray<T> BCarray<T>::operator||(const bool& scalar) const
 {
-    BCarray<T> res(this->size());
-    for (size_t i = 0; i < this->size(); ++i)
-    {
-        res[i] = (*this)[i] || scalar;
-    }
-    return res;
+	BCarray<T> res(this->size());
+	for (size_t i = 0; i < this->size(); ++i)
+	{
+		res[i] = (*this)[i] || scalar;
+	}
+	return res;
 }
 
 template <typename T>
 BCarray<T> BCarray<T>::operator!() const
 {
-    BCarray<T> res(this->size());
-    for (size_t i = 0; i < this->size(); ++i)
-    {
-        res[i] = !(*this)[i];
-    }
-    return res;
+	BCarray<T> res(this->size());
+	for (size_t i = 0; i < this->size(); ++i)
+	{
+		res[i] = !(*this)[i];
+	}
+	return res;
 }
 
 template <typename T>
 template <typename U>
-BCarray<U> BCarray<T>::apply(function<U(const T &)>)
+BCarray<U> BCarray<T>::apply(function<U(const T&)>)
 {
-    BCarray<U> result(this->size());
-    for (int i = 0; i < this->size(); i++)
-        result[i] = func(this->at(i));
-    return result;
+	BCarray<U> result(this->size());
+	for (int i = 0; i < this->size(); i++)
+		result[i] = func(this->at(i));
+	return result;
 }
-// Ê¹ÓÃÊµÀı
+// ä½¿ç”¨å®ä¾‹
 /*
 BCarray<double> a = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 BCarray<double> b = a.apply([](double x) {return x * x; });
@@ -458,10 +460,10 @@ BCarray<string> c = a.apply([](double x) {return to_string(x); });
 template <typename T>
 BCarray<T> BCarray<T>::sort(bool ascending)
 {
-    BCarray<T> result(*this);
-    sort(result.begin(), result.end(), [ascending](const T &a, const T &b)
-         { return ascending ? a < b : b < a; });
-    return result;
+	BCarray<T> result(*this);
+	sort(result.begin(), result.end(), [ascending](const T& a, const T& b)
+		{ return ascending ? a < b : b < a; });
+	return result;
 }
 
 // template <typename T>
@@ -473,186 +475,196 @@ BCarray<T> BCarray<T>::sort(bool ascending)
 template <typename T>
 void BCarray<T>::sort_(bool ascending)
 {
-    sort(this->begin(), this->end(), [ascending](const T &a, const T &b)
-         { return ascending ? a < b : b < a; });
+	sort(this->begin(), this->end(), [ascending](const T& a, const T& b)
+		{ return ascending ? a < b : b < a; });
 }
 
 template <typename T>
-T BCarray<T>::dot(const BCarray<T> &vec)
+T BCarray<T>::dot(const BCarray<T>& vec)
 {
-    return (*this * vec).sum();
+	return (*this * vec).sum();
 }
 
 template <typename T>
 BCarray<T> BCarray<T>::t() const
 {
-    BCarray<T> result(*this);
-    result.is_row_vector = !this->is_row_vector;
-    return result;
+	BCarray<T> result(*this);
+	result.is_row_vector = !this->is_row_vector;
+	return result;
 }
 
 template <typename T>
 BCarray<T> BCarray<T>::L2Normalize() const
 {
-    double normValue = this->norm(2);
-    if (normValue == 0)
-    {
-        throw std::runtime_error("Cannot normalize a zero vector.");
-    }
-    BCarray<T> result(*this);
-    result = result / normValue;
-    return result;
+	double normValue = this->norm(2);
+	if (normValue == 0)
+	{
+		throw std::runtime_error("Cannot normalize a zero vector.");
+	}
+	BCarray<T> result(*this);
+	result = result / normValue;
+	return result;
 }
 
 template <typename T>
 BCarray<T> BCarray<T>::minMaxNormalize() const
 {
-    T minValue = this->min();
-    T maxValue = this->max();
-    if (maxValue == minValue)
-    {
-        throw std::runtime_error("Cannot normalize a vector with all identical values.");
-    }
-    BCarray<T> result(*this);
-    result = (result - minValue) / (maxValue - minValue);
-    return result;
+	T minValue = this->min();
+	T maxValue = this->max();
+	if (maxValue == minValue)
+	{
+		throw std::runtime_error("Cannot normalize a vector with all identical values.");
+	}
+	BCarray<T> result(*this);
+	result = (result - minValue) / (maxValue - minValue);
+	return result;
 }
 
 template <typename T>
 BCarray<T> BCarray<T>::zScoreNormalize() const
 {
-    double meanValue = this->mean();
-    double stdValue = this->std();
-    if (stdValue == 0)
-    {
-        throw std::runtime_error("Cannot normalize a vector with zero standard deviation.");
-    }
-    BCarray<T> result(*this);
-    result = (result - meanValue) / stdValue;
-    return result;
+	double meanValue = this->mean();
+	double stdValue = this->std();
+	if (stdValue == 0)
+	{
+		throw std::runtime_error("Cannot normalize a vector with zero standard deviation.");
+	}
+	BCarray<T> result(*this);
+	result = (result - meanValue) / stdValue;
+	return result;
 }
 
 template <typename T>
 BCarray<T> BCarray<T>::centralize() const
 {
-    double meanValue = this->mean();
-    BCarray<T> result(*this);
-    result = result - meanValue;
-    return result;
+	double meanValue = this->mean();
+	BCarray<T> result(*this);
+	result = result - meanValue;
+	return result;
 }
 
 template <typename T>
 BCarray<T> BCarray<T>::normalize(string method) const
 {
-    if (method == "L2")
-    {
-        return this->L2Normalize();
-    }
-    else if (method == "minmax")
-    {
-        return this->minMaxNormalize();
-    }
-    else if (method == "zscore")
-    {
-        return this->zScoreNormalize();
-    }
-    else if (method == "centralize")
-    {
-        return this->centralize();
-    }
-    else
-    {
-        throw std::invalid_argument("only L2, minmax, and zscore are supported.");
-    }
+	if (method == "L2")
+	{
+		return this->L2Normalize();
+	}
+	else if (method == "minmax")
+	{
+		return this->minMaxNormalize();
+	}
+	else if (method == "zscore")
+	{
+		return this->zScoreNormalize();
+	}
+	else if (method == "centralize")
+	{
+		return this->centralize();
+	}
+	else
+	{
+		throw std::invalid_argument("only L2, minmax, and zscore are supported.");
+	}
 }
 
 template <typename T>
 void BCarray<T>::L2Normalize_()
 {
-    double normValue = this->norm(2);
-    if (normValue == 0)
-    {
-        throw std::runtime_error("Cannot normalize a zero vector.");
-    }
-    *this = *this / normValue;
+	double normValue = this->norm(2);
+	if (normValue == 0)
+	{
+		throw std::runtime_error("Cannot normalize a zero vector.");
+	}
+	*this = *this / normValue;
 }
 
 template <typename T>
 void BCarray<T>::minMaxNormalize_()
 {
-    T minValue = this->min();
-    T maxValue = this->max();
-    if (maxValue == minValue)
-    {
-        throw std::runtime_error("Cannot normalize a vector with all identical values.");
-    }
-    *this = (*this - minValue) / (maxValue - minValue);
+	T minValue = this->min();
+	T maxValue = this->max();
+	if (maxValue == minValue)
+	{
+		throw std::runtime_error("Cannot normalize a vector with all identical values.");
+	}
+	*this = (*this - minValue) / (maxValue - minValue);
 }
 
 template <typename T>
 void BCarray<T>::zScoreNormalize_()
 {
-    double meanValue = this->mean();
-    double stdValue = this->std();
-    if (stdValue == 0)
-    {
-        throw std::runtime_error("Cannot normalize a vector with zero standard deviation.");
-    }
-    *this = (*this - meanValue) / stdValue;
+	double meanValue = this->mean();
+	double stdValue = this->std();
+	if (stdValue == 0)
+	{
+		throw std::runtime_error("Cannot normalize a vector with zero standard deviation.");
+	}
+	*this = (*this - meanValue) / stdValue;
 }
 
 template <typename T>
 void BCarray<T>::centralize_()
 {
-    double meanValue = this->mean();
-    *this = *this - meanValue;
+	double meanValue = this->mean();
+	*this = *this - meanValue;
 }
 
 template <typename T>
 void BCarray<T>::normalize_(string method)
 {
-    if (method == "L2")
-    {
-        this->L2Normalize_();
-    }
-    else if (method == "minmax")
-    {
-        this->minMaxNormalize_();
-    }
-    else if (method == "zscore")
-    {
-        this->zScoreNormalize_();
-    }
-    else if (method == "centralize")
-    {
-        this->centralize_();
-    }
-    else
-    {
-        throw std::invalid_argument("only L2, minmax, and zscore are supported.");
-    }
+	if (method == "L2")
+	{
+		this->L2Normalize_();
+	}
+	else if (method == "minmax")
+	{
+		this->minMaxNormalize_();
+	}
+	else if (method == "zscore")
+	{
+		this->zScoreNormalize_();
+	}
+	else if (method == "centralize")
+	{
+		this->centralize_();
+	}
+	else
+	{
+		throw std::invalid_argument("only L2, minmax, and zscore are supported.");
+	}
 }
 
 template <typename T>
-pair<BCarray<T>, BCarray<T>> BCarray<T>::split(vector<int> &group)
+pair<BCarray<T>, BCarray<T>> BCarray<T>::split(vector<int>& group) const
 {
-    BCarray<T> group1, group2;
-    for (int i = 0; i < group.size(); i++)
-    {
-        if (group[i] == 0)
-        {
-            group1.push_back(this->at(i));
-        }
-        else if (group[i] == 1)
-        {
-            group2.push_back(this->at(i));
-        }
-        else
-        {
-            throw std::invalid_argument("groupmust be 0 or 1.");
-        }
-    }
-    return make_pair(group1, group2);
+	BCarray<T> group1, group2;
+	for (int i = 0; i < group.size(); i++)
+	{
+		if (group[i] == 0)
+		{
+			group1.push_back(this->at(i));
+		}
+		else if (group[i] == 1)
+		{
+			group2.push_back(this->at(i));
+		}
+		else
+		{
+			throw std::invalid_argument("groupmust be 0 or 1.");
+		}
+	}
+	return make_pair(group1, group2);
+}
+
+template <typename T>
+BCarray<T>::operator vector<double>() const {
+	vector<double> result;
+	result.reserve(this->size());
+	for (const auto& elem : *this) {
+		result.push_back(static_cast<double>(elem));
+	}
+	return result;
 }
 
 #endif
