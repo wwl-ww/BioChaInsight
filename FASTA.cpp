@@ -1,243 +1,244 @@
+Ôªø#include "stdafx.h"
 # include "FASTA.h"
 
 /*
-    Sequence
+	Sequence
 */
 Sequence::Sequence()
 {
-    this->sequence = "";
-    this->header = "";
+	this->sequence = "";
+	this->header = "";
 }
 
 Sequence::Sequence(const string& sequence, const string& header)
 {
-    this->sequence = sequence;
-    this->header = header;
+	this->sequence = sequence;
+	this->header = header;
 }
 
 Sequence::Sequence(const Sequence& seq)
 {
-    this->sequence = seq.sequence;
-    this->header = seq.header;
+	this->sequence = seq.sequence;
+	this->header = seq.header;
 }
 
-// ∂¡»°µƒ∫Ø ˝
+// ËØªÂèñÁöÑÂáΩÊï∞
 string Sequence::getSequence() const
 {
-    return this->sequence;
+	return this->sequence;
 }
 
 string Sequence::getHeader() const
 {
-    return this->header;
+	return this->header;
 }
 
 int Sequence::getLength() const
 {
-    return this->sequence.length();
+	return this->sequence.length();
 }
 
-// º∆À„GC∫¨¡ø
+// ËÆ°ÁÆóGCÂê´Èáè
 int Sequence::getGCSum() const
 {
-    int count = 0;
-    for (char ch : this->sequence)
-    {
-        if (ch == 'G' || ch == 'C')
-        {
-            count++;
-        }
-    }
-    return count;
+	int count = 0;
+	for (char ch : this->sequence)
+	{
+		if (ch == 'G' || ch == 'C')
+		{
+			count++;
+		}
+	}
+	return count;
 }
 
 double Sequence::getGCContent() const
 {
-    return static_cast<double>(this->getGCSum()) / this->getLength();
+	return static_cast<double>(this->getGCSum()) / this->getLength();
 }
 
-// ∑÷◊”¡ø
+// ÂàÜÂ≠êÈáè
 double Sequence::calculateMW() const
 {
-    unordered_map<char, double> mw = {
-        {'A', 331.2218},
-        {'C', 307.1971},
-        {'G', 347.2212},
-        {'T', 322.2085}
-    };
-    double result = 0;
-    for (char ch : this->sequence)
-    {
-        result += mw[ch];
-    }
-    return result;
+	unordered_map<char, double> mw = {
+		{'A', 331.2218},
+		{'C', 307.1971},
+		{'G', 347.2212},
+		{'T', 322.2085}
+	};
+	double result = 0;
+	for (char ch : this->sequence)
+	{
+		result += mw[ch];
+	}
+	return result;
 }
 
-// ª˘–Ú∆µ¬ 
+// Âü∫Â∫èÈ¢ëÁéá
 unordered_map<char, double> Sequence::calculateBaseFrequency() const
 {
-    unordered_map<char, double> freq;
-    for (char ch : this->sequence)
-    {
-        if (freq.find(ch) == freq.end())  // »Áπ˚’“≤ªµΩch£¨º¥freq÷–√ª”–ch
-        {
-            freq[ch] = 1;
-        }
-        else
-        {
-            freq[ch]++;
-        }
-    }
-    for (auto& pair : freq)
-    {
-        pair.second /= this->getLength();
-    }
-    return freq;
+	unordered_map<char, double> freq;
+	for (char ch : this->sequence)
+	{
+		if (freq.find(ch) == freq.end())  // Â¶ÇÊûúÊâæ‰∏çÂà∞chÔºåÂç≥freq‰∏≠Ê≤°Êúâch
+		{
+			freq[ch] = 1;
+		}
+		else
+		{
+			freq[ch]++;
+		}
+	}
+	for (auto& pair : freq)
+	{
+		pair.second /= this->getLength();
+	}
+	return freq;
 }
 
-// “ª–©≥£º˚π¶ƒ‹µƒ‘ÀÀ„∑˚÷ÿ‘ÿ
+// ‰∏Ä‰∫õÂ∏∏ËßÅÂäüËÉΩÁöÑËøêÁÆóÁ¨¶ÈáçËΩΩ
 Sequence& Sequence::operator+=(const Sequence& seq)
 {
-    this->sequence += seq.sequence;
-    return *this;
+	this->sequence += seq.sequence;
+	return *this;
 }
 
 Sequence& Sequence::operator+=(const string& seq)
 {
-    this->sequence += seq;
-    return *this;
+	this->sequence += seq;
+	return *this;
 }
 
 
 char Sequence::operator[](int index) const
 {
-    if (index < 0 || index >= this->getLength())
-    {
-        throw out_of_range("Index out of range");
-    }
-    return this->sequence[index];
+	if (index < 0 || index >= this->getLength())
+	{
+		throw out_of_range("Index out of range");
+	}
+	return this->sequence[index];
 }
 
 char& Sequence::operator[](int index)
 {
-    if (index < 0 || index >= this->getLength())
-    {
-        throw out_of_range("Index out of range");
-    }
-    return this->sequence[index];
+	if (index < 0 || index >= this->getLength())
+	{
+		throw out_of_range("Index out of range");
+	}
+	return this->sequence[index];
 }
 
 ostream& operator<<(ostream& output, const Sequence& seq)
 {
-    output << "Header: " << seq.header << endl;
-    output << "Sequence: " << seq.sequence;
-    return output;
+	output << "Header: " << seq.header << endl;
+	output << "Sequence: " << seq.sequence;
+	return output;
 }
 
 Sequence Sequence::operator!() const
 {
-    unordered_map<char, char> complement = {
-        {'A', 'T'},
-        {'T', 'A'},
-        {'C', 'G'},
-        {'G', 'C'}
-    };
-    Sequence result(this->getSequence(), "the complement of:" + this->getHeader());
-    for (char& ch : result.sequence)
-    {
-        ch = complement[ch];
-    }
-    return result;
+	unordered_map<char, char> complement = {
+		{'A', 'T'},
+		{'T', 'A'},
+		{'C', 'G'},
+		{'G', 'C'}
+	};
+	Sequence result(this->getSequence(), "the complement of:" + this->getHeader());
+	for (char& ch : result.sequence)
+	{
+		ch = complement[ch];
+	}
+	return result;
 }
 
 Sequence::operator string() const
 {
-    return this->sequence;
+	return this->sequence;
 }
 
 void Sequence::printInfo() const
 {
-    cout << *this << endl;  // Header and sequence
-    cout << "Length: " << this->getLength() << endl;
-    cout << "GC content: " << this->getGCContent() << endl;
-    cout << "Molecular weight: " << this->calculateMW() << endl;
-    cout << "Base frequency: " << endl;
-    unordered_map<char, double> freq = this->calculateBaseFrequency();
-    for (auto& pair : freq)
-    {
-        cout << pair.first << ": " << pair.second << endl;
-    }
-    cout << endl;
+	cout << *this << endl;  // Header and sequence
+	cout << "Length: " << this->getLength() << endl;
+	cout << "GC content: " << this->getGCContent() << endl;
+	cout << "Molecular weight: " << this->calculateMW() << endl;
+	cout << "Base frequency: " << endl;
+	unordered_map<char, double> freq = this->calculateBaseFrequency();
+	for (auto& pair : freq)
+	{
+		cout << pair.first << ": " << pair.second << endl;
+	}
+	cout << endl;
 }
 
 /*
-    FASTAReader
+	FASTAReader
 */
 void FASTAReader::_parse(const string& filename)
 {
-    ifstream file(filename);
-    if (!file.is_open())
-    {
-        cerr << "Error: Could not open file " << filename << endl;
-        return;
-    }
-    string line;
-    while (getline(file, line))
-    {
-        if (line.empty()) continue; // Skip empty lines
-        if (line[0] == '>') // Header line
-        {
-            this->seqs.push_back(Sequence("", line.substr(1))); // Create a new sequence with the header
-        }
-        else // Sequence line
-        {
-            if (this->seqs.empty())
-            {
-                cerr << "Error: Sequence data found before header in file " << filename << endl;
-                return;
-            }
-            this->seqs.back() += line; // Append to the last sequence
-        }
-    }
+	ifstream file(filename);
+	if (!file.is_open())
+	{
+		cerr << "Error: Could not open file " << filename << endl;
+		return;
+	}
+	string line;
+	while (getline(file, line))
+	{
+		if (line.empty()) continue; // Skip empty lines
+		if (line[0] == '>') // Header line
+		{
+			this->seqs.push_back(Sequence("", line.substr(1))); // Create a new sequence with the header
+		}
+		else // Sequence line
+		{
+			if (this->seqs.empty())
+			{
+				cerr << "Error: Sequence data found before header in file " << filename << endl;
+				return;
+			}
+			this->seqs.back() += line; // Append to the last sequence
+		}
+	}
 }
 
 FASTAReader::FASTAReader(const string& filename) : filename(filename)
 {
-    _parse(filename);
+	_parse(filename);
 }
 
 vector<Sequence> FASTAReader::getSeqs() const
 {
-    return this->seqs;
+	return this->seqs;
 }
 
 vector<Sequence> FASTAReader::operator()() const
 {
-    return this->seqs;
+	return this->seqs;
 }
 
 Sequence& FASTAReader::operator[](int index)
 {
-    if (index < 0 || index >= this->seqs.size())
-    {
-        cerr << "Error: Index out of bounds in FASTAReader::operator[]" << endl;
-        throw out_of_range("Index out of bounds");
-    }
-    return this->seqs[index];
+	if (index < 0 || index >= this->seqs.size())
+	{
+		cerr << "Error: Index out of bounds in FASTAReader::operator[]" << endl;
+		throw out_of_range("Index out of bounds");
+	}
+	return this->seqs[index];
 }
 
 const Sequence& FASTAReader::operator[](int index) const
 {
-    if (index < 0 || index >= this->seqs.size())
-    {
-        cerr << "Error: Index out of bounds in FASTAReader::operator[]" << endl;
-        throw out_of_range("Index out of bounds");
-    }
-    return this->seqs[index];
+	if (index < 0 || index >= this->seqs.size())
+	{
+		cerr << "Error: Index out of bounds in FASTAReader::operator[]" << endl;
+		throw out_of_range("Index out of bounds");
+	}
+	return this->seqs[index];
 }
 
 void FASTAReader::printInfo() const
 {
-    cout << "FASTA file: " << this->filename << endl;
-    cout << "Number of sequences: " << this->seqs.size() << endl;
+	cout << "FASTA file: " << this->filename << endl;
+	cout << "Number of sequences: " << this->seqs.size() << endl;
 }

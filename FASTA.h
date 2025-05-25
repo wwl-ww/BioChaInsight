@@ -1,7 +1,4 @@
-# pragma once
-
-#ifndef FASTA_H
-#define FASTA_H
+ï»¿# pragma once
 
 #include <fstream>
 #include <iostream>
@@ -11,62 +8,67 @@
 #include <unordered_map>
 using namespace std;
 
+#include "stdafx.h"
+
+#ifndef FASTA_H
+#define FASTA_H
+
 class Sequence
 {
 private:
-    string sequence;
-    string header;
+	string sequence;  // åºåˆ—
+	string header; // æè¿°
 
 public:
-    // ¹¹Ôìº¯Êı
-    Sequence();
-    Sequence(const string& sequence, const string& header = "");
-    Sequence(const Sequence& seq);
+	// æ„é€ å‡½æ•°
+	Sequence();
+	Sequence(const string& sequence, const string& header = "");
+	Sequence(const Sequence& seq);
 
-    // ¶ÁÈ¡µÄº¯Êı
-    string getSequence() const;
-    string getHeader() const;
-    int getLength() const;
+	// è¯»å–çš„å‡½æ•°
+	string getSequence() const;
+	string getHeader() const;
+	int getLength() const;
 
-    // ¼ÆËãGCº¬Á¿
-    int getGCSum() const;
-    double getGCContent() const;
+	// è®¡ç®—GCå«é‡
+	int getGCSum() const;
+	double getGCContent() const;
 
-    // ·Ö×ÓÁ¿
-    double calculateMW() const;
+	// åˆ†å­é‡
+	double calculateMW() const;
 
-    // »ùĞòÆµÂÊ
-    unordered_map<char, double> calculateBaseFrequency() const;
+	// åŸºåºé¢‘ç‡
+	unordered_map<char, double> calculateBaseFrequency() const;
 
-    // Ò»Ğ©³£¼û¹¦ÄÜµÄÔËËã·ûÖØÔØ
-    char operator[](int index) const;                             // ÏÂ±êÔËËã·ûÖØÔØ
-    char& operator[](int index);                                  // ÏÂ±êÔËËã·ûÖØÔØ
-    friend ostream& operator<<(ostream& os, const Sequence& seq); // Êä³ö
-    Sequence& operator+=(const Sequence& seq);                    // Á¬½Ó
-    Sequence& operator+=(const string& seq);                      // Á¬½Ó
-    Sequence operator!() const;                                   // »¥²¹
-    operator string() const;                                      // ×ª»»Îª×Ö·û´®
+	// ä¸€äº›å¸¸è§åŠŸèƒ½çš„è¿ç®—ç¬¦é‡è½½
+	char operator[](int index) const;                             // ä¸‹æ ‡è¿ç®—ç¬¦é‡è½½
+	char& operator[](int index);                                  // ä¸‹æ ‡è¿ç®—ç¬¦é‡è½½
+	friend ostream& operator<<(ostream& os, const Sequence& seq); // è¾“å‡º
+	Sequence& operator+=(const Sequence& seq);                    // è¿æ¥
+	Sequence& operator+=(const string& seq);                      // è¿æ¥
+	Sequence operator!() const;                                   // äº’è¡¥
+	operator string() const;                                      // è½¬æ¢ä¸ºå­—ç¬¦ä¸²
 
-    // Êä³öĞÅÏ¢
-    void printInfo() const;
+	// è¾“å‡ºä¿¡æ¯
+	void printInfo() const;
 };
 
 class FASTAReader
 {
 private:
-    string filename;
-    vector<Sequence> seqs;
-    void _parse(const string& filename);
+	string filename;
+	vector<Sequence> seqs;
+	void _parse(const string& filename);
 
 public:
-    FASTAReader(const string& filename);
+	FASTAReader(const string& filename);
 
-    vector<Sequence> getSeqs() const;
-    vector<Sequence> operator()() const;
-    Sequence& operator[](int index);
-    const Sequence& operator[](int index) const;
+	vector<Sequence> getSeqs() const;
+	vector<Sequence> operator()() const;
+	Sequence& operator[](int index);
+	const Sequence& operator[](int index) const;
 
-    void printInfo() const;
+	void printInfo() const;
 };
 
 #endif // FASTA_H
