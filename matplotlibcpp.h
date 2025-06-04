@@ -3,6 +3,8 @@
 // Python headers must be included before any system headers, since
 // they define _POSIX_C_SOURCE
 
+#define WITHOUT_NUMPY
+
 #pragma push_macro("slots")
 #undef slots
 #include <Python.h>

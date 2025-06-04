@@ -3,8 +3,10 @@
 #include "ST.h"
 #include "FASTA.h"
 
+
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-#include <numpy/arrayobject.h>
+#include<Python.h>
+//#include <numpy/arrayobject.h>
 
 bool init_python(const string& python_home)
 {
@@ -36,7 +38,7 @@ bool init_python(const string& python_home)
 		"import encodings";
 
 	PyRun_SimpleString(setup.c_str());
-	import_array();
+	//import_array(); // 非常重要，初始化 PyArray_API 指针
 	return 1;
 }
 
@@ -334,43 +336,219 @@ void GenePlot::plot_two_boxplot(
 }
 
 void GenePlot::plot_heatmap(
-	const vector<vector<double>>& matrix,
+	const std::vector<std::vector<double>>& matrix,
 	bool show_colorbar,
 	int width,
 	int height
 ) {
-	static auto& interp = plt::detail::_interpreter::get();
-
 	if (matrix.empty() || matrix[0].empty()) {
-		throw invalid_argument("Input matrix is empty.");
+		throw std::invalid_argument("Input matrix is empty.");
 	}
+	int rows = static_cast<int>(matrix.size());
+	int cols = static_cast<int>(matrix[0].size());
 
-	int rows = matrix.size();
-	int cols = matrix[0].size();
-
-	// 检查所有行的长度一致
+	// 检查每行长度是否一致
 	for (const auto& row : matrix) {
-		if (row.size() != cols) {
-			throw invalid_argument("All rows in the matrix must have the same number of columns.");
+		if (static_cast<int>(row.size()) != cols) {
+			throw std::invalid_argument("All rows in the matrix must have the same number of columns.");
 		}
 	}
 
-	// 拉平
-	vector<float> flat_data;
-	flat_data.reserve(rows * cols);
-	for (const auto& row : matrix) {
-		flat_data.insert(flat_data.end(), row.begin(), row.end());
+	// 1. 初始化 Python 解释器（如果还没初始化）
+	if (!Py_IsInitialized()) {
+		Py_Initialize();
 	}
 
-	PyObject* im = nullptr;
-	plt::imshow(flat_data.data(), rows, cols, 1, { {"cmap", "PiYG"} }, &im);
-
-	if (show_colorbar && im != nullptr) {
-		plt::colorbar(im);
+	// 2. 构造一个 Python 嵌套列表 pyMatrix，等下用 numpy.array(pyMatrix)
+	PyObject* pyMatrix = PyList_New(rows);
+	if (!pyMatrix) {
+		PyErr_Print();
+		throw std::runtime_error("Failed to create Python list for matrix.");
+	}
+	for (int i = 0; i < rows; ++i) {
+		PyObject* pyRow = PyList_New(cols);
+		if (!pyRow) {
+			PyErr_Print();
+			Py_DECREF(pyMatrix);
+			throw std::runtime_error("Failed to create Python list for a row.");
+		}
+		for (int j = 0; j < cols; ++j) {
+			PyObject* pyVal = PyFloat_FromDouble(matrix[i][j]);
+			if (!pyVal) {
+				PyErr_Print();
+				Py_DECREF(pyRow);
+				Py_DECREF(pyMatrix);
+				throw std::runtime_error("Failed to convert matrix element to Python float.");
+			}
+			// PyList_SetItem 会把 pyVal 的引用计数收走
+			PyList_SetItem(pyRow, j, pyVal);
+		}
+		PyList_SetItem(pyMatrix, i, pyRow);  // 收走 pyRow
 	}
 
-	plt::title("Heatmap");
-	plt::show();
+	// 3. 导入 numpy 和 matplotlib.pyplot
+	PyObject* numpyMod = PyImport_ImportModule("numpy");
+	if (!numpyMod) {
+		PyErr_Print();
+		Py_DECREF(pyMatrix);
+		throw std::runtime_error("Failed to import numpy.");
+	}
+	PyObject* pltMod = PyImport_ImportModule("matplotlib.pyplot");
+	if (!pltMod) {
+		PyErr_Print();
+		Py_DECREF(numpyMod);
+		Py_DECREF(pyMatrix);
+		throw std::runtime_error("Failed to import matplotlib.pyplot.");
+	}
+
+	// 4. 把 Python 嵌套列表转换成 numpy.ndarray：arr = numpy.array(pyMatrix)
+	PyObject* arrayFunc = PyObject_GetAttrString(numpyMod, "array");
+	if (!arrayFunc) {
+		PyErr_Print();
+		Py_DECREF(pltMod);
+		Py_DECREF(numpyMod);
+		Py_DECREF(pyMatrix);
+		throw std::runtime_error("Failed to get numpy.array.");
+	}
+	PyObject* argsArray = PyTuple_Pack(1, pyMatrix);
+	PyObject* npArray = PyObject_CallObject(arrayFunc, argsArray);
+	Py_DECREF(argsArray);
+	Py_DECREF(arrayFunc);
+	Py_DECREF(pyMatrix);
+	if (!npArray) {
+		PyErr_Print();
+		Py_DECREF(pltMod);
+		Py_DECREF(numpyMod);
+		throw std::runtime_error("Failed to call numpy.array.");
+	}
+
+	// 5. 设定图形大小：plt.figure(figsize=(width/100.0, height/100.0))
+	PyObject* figureFunc = PyObject_GetAttrString(pltMod, "figure");
+	if (!figureFunc) {
+		PyErr_Print();
+		Py_DECREF(npArray);
+		Py_DECREF(pltMod);
+		Py_DECREF(numpyMod);
+		throw std::runtime_error("Failed to get matplotlib.pyplot.figure.");
+	}
+	double inchW = width / 100.0;
+	double inchH = height / 100.0;
+	PyObject* pyInchW = PyFloat_FromDouble(inchW);
+	PyObject* pyInchH = PyFloat_FromDouble(inchH);
+	PyObject* sizeTuple = PyTuple_Pack(2, pyInchW, pyInchH);
+	Py_DECREF(pyInchW);
+	Py_DECREF(pyInchH);
+	// 调用 figure(figsize=(inchW, inchH))
+	PyObject* kwFig = PyDict_New();
+	PyDict_SetItemString(kwFig, "figsize", sizeTuple);
+	Py_DECREF(sizeTuple);
+	PyObject* figRes = PyObject_Call(figureFunc, PyTuple_New(0), kwFig);
+	Py_DECREF(kwFig);
+	Py_DECREF(figureFunc);
+	if (!figRes) {
+		PyErr_Print();
+		Py_DECREF(npArray);
+		Py_DECREF(pltMod);
+		Py_DECREF(numpyMod);
+		throw std::runtime_error("Failed to call plt.figure.");
+	}
+	Py_DECREF(figRes);
+
+	// 6. 调用 im = plt.imshow(npArray, cmap='PiYG', aspect='auto')
+	PyObject* imshowFunc = PyObject_GetAttrString(pltMod, "imshow");
+	if (!imshowFunc) {
+		PyErr_Print();
+		Py_DECREF(npArray);
+		Py_DECREF(pltMod);
+		Py_DECREF(numpyMod);
+		throw std::runtime_error("Failed to get matplotlib.pyplot.imshow.");
+	}
+	// 准备关键字参数：{'cmap':'PiYG', 'aspect':'auto'}
+	PyObject* kwIm = PyDict_New();
+	PyDict_SetItemString(kwIm, "cmap", PyUnicode_FromString("PiYG"));
+	PyDict_SetItemString(kwIm, "aspect", PyUnicode_FromString("auto"));
+	// 调用 imshow
+	PyObject* argsIm = PyTuple_Pack(1, npArray);
+	PyObject* imRes = PyObject_Call(imshowFunc, argsIm, kwIm);
+	Py_DECREF(argsIm);
+	Py_DECREF(kwIm);
+	Py_DECREF(imshowFunc);
+	Py_DECREF(npArray);
+	if (!imRes) {
+		PyErr_Print();
+		Py_DECREF(pltMod);
+		Py_DECREF(numpyMod);
+		throw std::runtime_error("plt.imshow call failed.");
+	}
+
+	// 7. 如果需要 colorbar，则 plt.colorbar(imRes)
+	if (show_colorbar) {
+		PyObject* colorbarFunc = PyObject_GetAttrString(pltMod, "colorbar");
+		if (!colorbarFunc) {
+			PyErr_Print();
+			Py_DECREF(imRes);
+			Py_DECREF(pltMod);
+			Py_DECREF(numpyMod);
+			throw std::runtime_error("Failed to get matplotlib.pyplot.colorbar.");
+		}
+		PyObject* argsCb = PyTuple_Pack(1, imRes);
+		PyObject* cbRes = PyObject_CallObject(colorbarFunc, argsCb);
+		Py_DECREF(argsCb);
+		Py_DECREF(colorbarFunc);
+		if (!cbRes) {
+			PyErr_Print();
+			Py_DECREF(imRes);
+			Py_DECREF(pltMod);
+			Py_DECREF(numpyMod);
+			throw std::runtime_error("plt.colorbar call failed.");
+		}
+		Py_DECREF(cbRes);
+	}
+	Py_DECREF(imRes);
+
+	// 8. plt.title("Heatmap")
+	PyObject* titleFunc = PyObject_GetAttrString(pltMod, "title");
+	if (!titleFunc) {
+		PyErr_Print();
+		Py_DECREF(pltMod);
+		Py_DECREF(numpyMod);
+		throw std::runtime_error("Failed to get matplotlib.pyplot.title.");
+	}
+	PyObject* titleArg = PyUnicode_FromString("Heatmap");
+	PyObject* argsTitle = PyTuple_Pack(1, titleArg);
+	PyObject* titleRes = PyObject_CallObject(titleFunc, argsTitle);
+	Py_DECREF(argsTitle);
+	Py_DECREF(titleArg);
+	Py_DECREF(titleFunc);
+	if (!titleRes) {
+		PyErr_Print();
+		Py_DECREF(pltMod);
+		Py_DECREF(numpyMod);
+		throw std::runtime_error("plt.title call failed.");
+	}
+	Py_DECREF(titleRes);
+
+	// 9. plt.show()
+	PyObject* showFunc = PyObject_GetAttrString(pltMod, "show");
+	if (!showFunc) {
+		PyErr_Print();
+		Py_DECREF(pltMod);
+		Py_DECREF(numpyMod);
+		throw std::runtime_error("Failed to get matplotlib.pyplot.show.");
+	}
+	PyObject* showRes = PyObject_CallObject(showFunc, nullptr);
+	Py_DECREF(showFunc);
+	if (!showRes) {
+		PyErr_Print();
+		Py_DECREF(pltMod);
+		Py_DECREF(numpyMod);
+		throw std::runtime_error("plt.show call failed.");
+	}
+	Py_DECREF(showRes);
+
+	// 10. 清理
+	Py_DECREF(pltMod);
+	Py_DECREF(numpyMod);
 }
 
 void GenePlot::showTwoBaseCompositionPieDialog(const Sequence& seq1,

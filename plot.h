@@ -26,7 +26,7 @@ using namespace std;
 
 namespace plt = matplotlibcpp;
 
-bool init_python(const string& python_home = "D:/anaconda");
+bool init_python(const string& python_home = "D:\\Application\\python39");
 
 namespace GenePlot
 {
