@@ -2670,9 +2670,17 @@
     <addaction name="actioncontact"/>
     <addaction name="actiontutorial"/>
    </widget>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>扩展</string>
+    </property>
+    <addaction name="actionai"/>
+    <addaction name="actiondoc"/>
+   </widget>
    <addaction name="menu1"/>
    <addaction name="menu2"/>
    <addaction name="menu3"/>
+   <addaction name="menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
@@ -2808,6 +2816,16 @@
   <action name="actionreadme">
    <property name="text">
     <string>初始界面</string>
+   </property>
+  </action>
+  <action name="actionai">
+   <property name="text">
+    <string>AI助手</string>
+   </property>
+  </action>
+  <action name="actiondoc">
+   <property name="text">
+    <string>文档阅读器</string>
    </property>
   </action>
  </widget>

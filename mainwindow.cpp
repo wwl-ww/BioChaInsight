@@ -21,6 +21,8 @@
 #include <QDockWidget>
 #include <QFileDialog>
 #include "Alignment.h"
+#include <QWebEngineView>
+#include <QWebEngineSettings>
 #include "FASTA.h"
 #include <qdebug.h>
 #include "table.h"
@@ -95,6 +97,22 @@ void applyFontColorToAllChildren(QWidget* widget, const QColor& color) {
 			applyFontColorToAllChildren(childWidget, color);
 		}
 	}
+}
+
+// 子窗口事件同步
+void MainWindow::moveEvent(QMoveEvent* event) {
+	QMainWindow::moveEvent(event);
+	if (assistant) assistant->syncPositionWith(this);
+}
+
+void MainWindow::resizeEvent(QResizeEvent* event) {
+	QMainWindow::resizeEvent(event);
+	if (assistant) assistant->syncPositionWith(this);
+}
+
+void MainWindow::closeEvent(QCloseEvent* event) {
+	if (assistant) assistant->close();
+	QMainWindow::closeEvent(event);
 }
 
 void MainWindow::alignment_init()
@@ -1378,65 +1396,47 @@ void MainWindow::st_run() {
 	}
 }
 
+void MainWindow::initAssistant() {
+	assistant = new AssistantWidget();
+	assistant->show();
+	assistant->syncPositionWith(this);    // 初始对齐
+}
+
+void MainWindow::initReader() {
+	mdReader = new HtmlViewerWidget();
+	mdReader->setHtmlFolder("C:\\Users\\wwl\\source\\repos\\BioChaInsight\\doc");
+	mdReader->setWindowTitle("html Reader");
+	mdReader->show();
+}
+
 // readme栏目 "C:\\Users\\wwl\\source\\repos\\BioChaInsight\\doc\\main_ui.html"
 void MainWindow::init_readme()
 {
-	// 临时容器
+	// 创建临时容器面板
 	QWidget* readmePanel = new QWidget(this);
 	QVBoxLayout* layout = new QVBoxLayout(readmePanel);
+	layout->setContentsMargins(0, 0, 0, 0);
+	layout->setSpacing(0);
 
-	// 容器添加到中心区域
+	// 将面板加入到 viewStack 并显示
 	ui->viewStack->addWidget(readmePanel);
 	ui->viewStack->setCurrentWidget(readmePanel);
-
 	connect(ui->actionreadme, &QAction::triggered, this, [this, readmePanel]() {
 		ui->viewStack->setCurrentWidget(readmePanel);
 		});
 
-	// QTextBrowser可以放大放小
-	QTextBrowser* browser = new QTextBrowser(readmePanel);
-	browser->setFont(QFont("等线", 9));
-	browser->setOpenExternalLinks(true);
+	// 使用 QWebEngineView 来渲染 HTML（支持彩色 Emoji）
+	QWebEngineView* webview = new QWebEngineView(readmePanel);
+	webview->settings()->setAttribute(
+		QWebEngineSettings::LocalContentCanAccessFileUrls, true);
 
-	// 读取
-	QFile file("C:\\Users\\wwl\\source\\repos\\BioChaInsight\\doc\\main_ui.html");
-	if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		QTextStream in(&file);
-		in.setCodec("UTF-8");
-		browser->setHtml(in.readAll());
-		file.close();
-	}
+	webview->setZoomFactor(1.25);  // 设置缩放比例为 1.25
 
-	//// 创建右上角关闭按钮
-	//QPushButton* closeButton = new QPushButton("×", readmePanel);
-	//closeButton->setFixedSize(30, 15);
-	//closeButton->setStyleSheet("border: none; font-size: 16px;");
-	//closeButton->setStyleSheet(R"(
- //           QPushButton {
- //               border: none;
- //               color: red;
- //               font-size: 16px;
- //           }
- //           QPushButton:hover {
- //               background-color: #ffdddd;
- //           }
- //       )");
-	//connect(closeButton, &QPushButton::clicked, [=]() {
-	//	// 关闭后释放面板，并恢复主界面
-	//	readmePanel->deleteLater();
-	//	// ui->setupUi(this);  // 恢复原有UI
-	//	});
+	QString htmlPath = "C:/Users/wwl/source/repos/BioChaInsight/doc/main_ui.html";
+	webview->load(QUrl::fromLocalFile(htmlPath));
 
-	// 布局
-	QHBoxLayout* headerLayout = new QHBoxLayout();
-	headerLayout->addStretch();
-	//headerLayout->addWidget(closeButton);
-
-	layout->addLayout(headerLayout);
-	layout->addWidget(browser);
-	layout->setContentsMargins(0, 0, 0, 0);
-	layout->setSpacing(0);
-
+	layout->addWidget(webview);
+	readmePanel->setLayout(layout);
 }
 
 void MainWindow::init_main()
@@ -1616,6 +1616,26 @@ MainWindow::MainWindow(QWidget* parent)
 
 	// 栏目7
 	pro_init();
+
+	// connect ui->actionai 和 initAssistant
+	connect(ui->actionai, &QAction::triggered, this, [this]() {
+		if (!assistant) {
+			initAssistant();
+		}
+		else {
+			assistant->show();
+			assistant->syncPositionWith(this);  // 窗口对齐
+		}
+		});
+	// connect ui->actionreader 和 initReader
+	connect(ui->actiondoc, &QAction::triggered, this, [this]() {
+		if (!mdReader) {
+			initReader();
+		}
+		else {
+			mdReader->show();
+		}
+		});
 }
 
 MainWindow::~MainWindow()

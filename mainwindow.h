@@ -4,6 +4,9 @@
 #include "ui_mainwindow.h"
 #include "table.h"
 
+#include "AssistantWidget.h"
+#include "HtmlViewerWidget.h"
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowClass; };
 QT_END_NAMESPACE
@@ -50,7 +53,18 @@ public:
 	void pro_run();
 	void st_run();
 
+	// 助手窗口
+	void initAssistant();
+	void initReader();
+
+	// 子窗口事件同步
+	void moveEvent(QMoveEvent* event) override;
+	void resizeEvent(QResizeEvent* event) override;
+	void closeEvent(QCloseEvent* event) override;
+
 private:
 	Ui::MainWindowClass* ui;
 	TableWidget* tbl = nullptr;  // 表格
+	AssistantWidget* assistant = nullptr; // 助手窗口
+	HtmlViewerWidget* mdReader = nullptr; // Markdown阅读器
 };
