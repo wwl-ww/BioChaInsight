@@ -1,0 +1,87 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Gotoh 算法</title>
+  <script>
+    MathJax = {
+      tex: {
+        packages: ['base', 'ams'],
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<style>.mjx-container[jax='CHTML'][display='true'] { text-align: left !important; }</style>
+
+    <style>
+    code.language-text {
+        background: #f8f8f8;
+        display: block;
+        padding: 1em;
+        margin: 1em 0;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        font-family: Consolas, monospace;
+        font-size: 0.95em;
+        line-height: 1.5em;
+        white-space: pre-wrap;
+    }
+    </style>
+    
+</head>
+<body>
+  <h1>Gotoh 算法（带有 affine gap penalty）</h1>
+  <div id="toc">
+    <h2>目录</h2>
+    <ul>
+      <li><a href="#intro">1. 简介</a></li>
+      <li><a href="#dp">2. 动态规划</a></li>
+      <li><a href="#complexity">3. 复杂度</a></li>
+      <li><a href="#applications">4. 应用</a></li>
+      <li><a href="#code">5. 伪代码</a></li>
+    </ul>
+  </div>
+
+  <h2 id="intro">1. 简介</h2>
+  <p>Gotoh 算法引入了 affine gap penalty，表示插入/删除开始和延续的代价不同，改进了 Needleman–Wunsch 的固定 gap 模型。</p>
+
+  <h2 id="dp">2. 动态规划</h2>
+  <p>设 gap 罚函数为：$g(k) = \alpha + \beta \cdot (k-1)$，其中 $\alpha$ 为 gap 开始惩罚，$\beta$ 为 gap 延续惩罚。</p>
+  <p>设 $M[i,j]$ 表示正常匹配，$I[i,j]$ 表示 A 缺失，$D[i,j]$ 表示 B 缺失：</p>
+
+  <div>
+  $$
+  \begin{aligned}
+  M[i,j] &= \max\{M[i-1,j-1], I[i-1,j-1], D[i-1,j-1]\} + s(a_i, b_j) \\
+  I[i,j] &= \max\{M[i-1,j] - \alpha, I[i-1,j] - \beta\} \\
+  D[i,j] &= \max\{M[i,j-1] - \alpha, D[i,j-1] - \beta\}
+  \end{aligned}
+  $$
+  </div>
+
+  <h2 id="complexity">3. 复杂度</h2>
+  <ul>
+    <li>时间复杂度：$O(mn)$</li>
+    <li>空间复杂度：$O(mn)$（可优化）</li>
+  </ul>
+
+  <h2 id="applications">4. 应用</h2>
+  <ul>
+    <li>更真实建模生物插入/删除事件</li>
+    <li>更适用于结构性蛋白质序列比对</li>
+  </ul>
+
+  <h2 id="code">5. 伪代码</h2>
+  <pre><code class="language-text">function Gotoh(A, B, alpha, beta, s):
+    初始化 M, I, D 矩阵
+for i in 1..m:
+for j in 1..n:
+    M[i][j] ← max(M[i-1][j-1], I[i-1][j-1], D[i-1][j-1]) + s(A[i], B[j])
+    I[i][j] ← max(M[i-1][j] - alpha, I[i-1][j] - beta)
+    D[i][j] ← max(M[i][j-1] - alpha, D[i][j-1] - beta)
+    回溯 M, I, D 得到比对路径</code></pre>
+</body>
+</html>

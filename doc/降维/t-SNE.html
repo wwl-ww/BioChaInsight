@@ -1,0 +1,222 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>t-SNE</title>
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css" rel="stylesheet"/>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: #ffffff;
+            color: #333;
+            max-width: 900px;
+            margin: auto;
+            padding: 2rem;
+        }
+        h1, h2, h3 {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.3em;
+            margin-top: 2em;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 1em;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: Consolas, Monaco, monospace;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['\(','\)']],
+    displayMath: [['$$','$$']]
+  },
+  options: {
+    renderActions: {
+      find_script_mathtex: [10, function (doc) {
+        for (const node of document.querySelectorAll('.math')) {
+          const math = node.textContent;
+          const script = document.createElement('script');
+          script.type = 'math/tex';
+          script.text = math;
+          node.replaceWith(script);
+        }
+      }, '']
+    }
+  }
+};
+</script>
+
+    <script id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+</head>
+<body>
+<article>
+<h1 id="t-sne">t-SNE</h1>
+
+<p><ul><li style="margin-left:0px"><a href="#t-sne">t-SNE</a></li>
+<li style="margin-left:0px"><a href="#1-算法介绍">1. 算法介绍</a></li>
+<li style="margin-left:0px"><a href="#2-公式及原理">2. 公式及原理</a></li>
+<li style="margin-left:0px"><a href="#3-伪代码">3. 伪代码</a></li></ul></p>
+
+<h1 id="1-算法介绍">1. 算法介绍</h1>
+
+<ul>
+<li><p><strong>背景与目标</strong>
+ t-SNE（t-distributed Stochastic Neighbor Embedding）由 Laurens van der Maaten 和 Geoffrey Hinton 于2008年提出，是一种非线性降维与可视化技术。其核心目标是：</p>
+
+<blockquote>
+  <p>在低维空间中尽可能保留高维数据的局部结构（相似度），使得“相似”的样本点在低维中也距离较近，“不相似”的样本点距离较远，从而便于可视化高维数据的聚类与分布特征。</p>
+</blockquote></li>
+<li><p><strong>应用场景</strong></p>
+
+<ul>
+<li>高维特征的二维或三维可视化（如图像、文本、基因表达等）</li>
+<li>对聚类结构的直观展示</li>
+<li>探索数据的局部拓扑关系</li>
+</ul></li>
+<li><p><strong>核心思路</strong></p>
+
+<ol>
+<li><strong>高维相似度建模</strong>——将高维点对 <span class="math">\mathbf{x}_i,\mathbf{x}_j</span> 的距离转换成条件概率 <span class="math">p_{j|i}</span>（用高斯分布），以衡量“在点 <span class="math">\mathbf{x}_i</span> 邻域中看到 <span class="math">\mathbf{x}_j</span> 的概率”；</li>
+<li><strong>对称化概率</strong>——构造对称相似度 <span class="math">p_{ij} = \frac{p_{j|i}+p_{i|j}}{2n}</span>；</li>
+<li><strong>低维相似度建模</strong>——在低维空间用 Student t 分布（自由度为1）的重尾性质，定义 <span class="math">q_{ij}</span>；</li>
+<li><strong>最小化 KL 散度</strong>——通过梯度下降，使低维分布 <span class="math">q_{ij}</span> 与高维分布 <span class="math">p_{ij}</span> 在全局上最接近。</li>
+</ol></li>
+</ul>
+
+<hr />
+
+<h1 id="2-公式及原理">2. 公式及原理</h1>
+
+<p><strong>2.1 高维条件概率</strong>
+   对于每个数据点 <span class="math">\mathbf{x}_i</span>，令其对 <span class="math">\mathbf{x}_j</span> 的条件相似度为：</p>
+
+<p>$$
+     p_{j|i} = \frac{\exp\bigl(-\|\mathbf{x}_i-\mathbf{x}_j\|^2/2\sigma_i^2\bigr)}{\sum_{k\neq i}\exp\bigl(-\|\mathbf{x}_i-\mathbf{x}_k\|^2/2\sigma_i^2\bigr)},
+   $$</p>
+
+<p>其中 <span class="math">\sigma_i</span> 根据预设的<strong>困惑度</strong>（perplexity）通过二分搜索确定，使得</p>
+
+<p>$$
+     \mathrm{Perp}(P_i) = 2^{-\sum_j p_{j|i}\log_2 p_{j|i}}
+     \approx \text{预设值}.
+   $$</p>
+
+<p><strong>2.2 对称化相似度</strong></p>
+
+<p>$$
+     p_{ij} = \frac{p_{j|i}+p_{i|j}}{2n},\quad p_{ii}=0.
+   $$</p>
+
+<p><strong>2.3 低维 Student t 分布</strong>
+   对于低维映射点 <span class="math">\mathbf{y}_i,\mathbf{y}_j</span>，定义</p>
+
+<p>$$
+     q_{ij}
+     = \frac{\bigl(1 + \|\mathbf{y}_i-\mathbf{y}_j\|^2\bigr)^{-1}}
+            {\sum_{k\neq \ell}\bigl(1 + \|\mathbf{y}_k-\mathbf{y}_\ell\|^2\bigr)^{-1}},
+     \quad q_{ii}=0.
+   $$</p>
+
+<p><strong>2.4 目标函数：KL 散度</strong>
+   最小化高维与低维分布之间的 Kullback–Leibler 散度：</p>
+
+<p>$$
+     C = \mathrm{KL}(P\|Q)
+       = \sum_{i\neq j} p_{ij}\,\log\frac{p_{ij}}{q_{ij}}.
+   $$</p>
+
+<p>对 <span class="math">\mathbf{Y}={\mathbf{y}_i}</span> 求梯度，并用带动量的梯度下降更新：</p>
+
+<p>$$
+     \frac{\partial C}{\partial \mathbf{y}_i}
+     = 4 \sum_j (p_{ij}-q_{ij})
+       \,( \mathbf{y}_i-\mathbf{y}_j)\,(1+\|\mathbf{y}_i-\mathbf{y}_j\|^2)^{-1}.
+   $$</p>
+
+<hr />
+
+<h1 id="3-伪代码">3. 伪代码</h1>
+
+<div class="codehilite">
+<pre><span></span><code><span class="c1"># 输入</span>
+<span class="c1">#   X: 原始数据矩阵，形状 (n, d)</span>
+<span class="c1">#   perplexity: 困惑度超参数</span>
+<span class="c1">#   dim: 目标低维维度（通常为2或3）</span>
+<span class="c1">#   max_iter: 最大迭代次数</span>
+<span class="c1"># 输出</span>
+<span class="c1">#   Y: 降维后数据，形状 (n, dim)</span>
+
+<span class="n">function</span> <span class="n">tSNE</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">perplexity</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">max_iter</span><span class="p">):</span>
+    <span class="n">n</span> <span class="err">←</span> <span class="n">number_of_rows</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+    <span class="c1"># 1) 计算高维相似度矩阵 P</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="mi">1</span><span class="err">…</span><span class="n">n</span><span class="p">:</span>
+        <span class="c1"># 根据困惑度二分搜索 σ_i，得到 p_{j|i}</span>
+        <span class="n">σ_i</span> <span class="err">←</span> <span class="n">binary_search_sigma</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">X</span><span class="p">,</span> <span class="n">perplexity</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="mi">1</span><span class="err">…</span><span class="n">n</span><span class="p">,</span> <span class="n">j</span><span class="err">≠</span><span class="n">i</span><span class="p">:</span>
+            <span class="n">p_</span><span class="p">{</span><span class="n">j</span><span class="o">|</span><span class="n">i</span><span class="p">}</span> <span class="err">←</span> <span class="n">exp</span><span class="p">(</span><span class="o">-||</span><span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">X</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">||</span><span class="err">²</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="n">σ_i</span><span class="err">²</span><span class="p">))</span>
+        <span class="n">normalize</span> <span class="n">p_</span><span class="p">{</span><span class="err">·</span><span class="o">|</span><span class="n">i</span><span class="p">}</span> <span class="n">so</span> <span class="n">sum_j</span> <span class="n">p_</span><span class="p">{</span><span class="n">j</span><span class="o">|</span><span class="n">i</span><span class="p">}</span><span class="o">=</span><span class="mi">1</span>
+    <span class="n">construct</span> <span class="n">p_</span><span class="p">{</span><span class="n">ij</span><span class="p">}</span> <span class="err">←</span> <span class="p">(</span><span class="n">p_</span><span class="p">{</span><span class="n">j</span><span class="o">|</span><span class="n">i</span><span class="p">}</span><span class="o">+</span><span class="n">p_</span><span class="p">{</span><span class="n">i</span><span class="o">|</span><span class="n">j</span><span class="p">})</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="n">n</span><span class="p">)</span>
+
+    <span class="c1"># 2) 初始化 Y（小的随机扰动）</span>
+    <span class="n">Y</span> <span class="err">←</span> <span class="n">random_matrix</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.0001</span>
+
+    <span class="c1"># 3) 梯度下降：带学习率、动量和早期夸张</span>
+    <span class="n">momentum</span> <span class="err">←</span> <span class="mf">0.5</span>
+    <span class="n">gains</span> <span class="err">←</span> <span class="n">ones</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
+    <span class="n">Y_inc</span> <span class="err">←</span> <span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
+    <span class="n">P</span> <span class="err">←</span> <span class="n">P</span> <span class="o">*</span> <span class="mi">4</span>           <span class="c1"># 早期夸张 (optional)</span>
+
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="mi">1</span><span class="err">…</span><span class="n">max_iter</span><span class="p">:</span>
+        <span class="c1"># 3.1) 计算低维相似度 Q</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="ow">in</span> <span class="mi">1</span><span class="err">…</span><span class="n">n</span><span class="p">:</span>
+            <span class="n">num_</span><span class="p">{</span><span class="n">ij</span><span class="p">}</span> <span class="err">←</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="o">||</span><span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">Y</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">||</span><span class="err">²</span><span class="p">)</span><span class="o">^</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">Q</span> <span class="err">←</span> <span class="n">normalize</span> <span class="n">num</span> <span class="n">s</span><span class="o">.</span><span class="n">t</span><span class="o">.</span> <span class="n">sum_</span><span class="p">{</span><span class="n">i</span><span class="err">≠</span><span class="n">j</span><span class="p">}</span> <span class="n">Q_</span><span class="p">{</span><span class="n">ij</span><span class="p">}</span><span class="o">=</span><span class="mi">1</span>
+
+        <span class="c1"># 3.2) 计算梯度</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="mi">1</span><span class="err">…</span><span class="n">n</span><span class="p">:</span>
+            <span class="n">grad</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="err">←</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">Σ_j</span> <span class="p">(</span><span class="n">P_</span><span class="p">{</span><span class="n">ij</span><span class="p">}</span><span class="o">-</span><span class="n">Q_</span><span class="p">{</span><span class="n">ij</span><span class="p">})</span> <span class="o">*</span> <span class="p">(</span><span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">Y</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="o">*</span> <span class="n">num_</span><span class="p">{</span><span class="n">ij</span><span class="p">}</span>
+
+        <span class="c1"># 3.3) 自适应学习率与动量更新</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="mi">1</span><span class="err">…</span><span class="n">n</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="mi">1</span><span class="err">…</span><span class="n">dim</span><span class="p">:</span>
+            <span class="n">gains</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">d</span><span class="p">]</span> <span class="err">←</span> <span class="p">(</span><span class="n">gains</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">d</span><span class="p">]</span><span class="o">+</span><span class="mf">0.2</span><span class="p">)</span> <span class="k">if</span> <span class="n">sign</span><span class="p">(</span><span class="n">grad</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">d</span><span class="p">])</span><span class="err">≠</span><span class="n">sign</span><span class="p">(</span><span class="n">Y_inc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">d</span><span class="p">])</span>
+                          <span class="k">else</span> <span class="n">gains</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">d</span><span class="p">]</span><span class="o">*</span><span class="mf">0.8</span>
+            <span class="n">gains</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">d</span><span class="p">]</span> <span class="err">←</span> <span class="nb">max</span><span class="p">(</span><span class="n">gains</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">d</span><span class="p">],</span> <span class="mf">0.01</span><span class="p">)</span>
+            <span class="n">Y_inc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">d</span><span class="p">]</span> <span class="err">←</span> <span class="n">momentum</span> <span class="o">*</span> <span class="n">Y_inc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">d</span><span class="p">]</span>
+                          <span class="o">-</span> <span class="n">learning_rate</span> <span class="o">*</span> <span class="n">gains</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">d</span><span class="p">]</span> <span class="o">*</span> <span class="n">grad</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">d</span><span class="p">]</span>
+            <span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">d</span><span class="p">]</span>   <span class="err">←</span> <span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">d</span><span class="p">]</span> <span class="o">+</span> <span class="n">Y_inc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">d</span><span class="p">]</span>
+
+        <span class="c1"># 3.4) 调整动量与早期夸张</span>
+        <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="mi">250</span><span class="p">:</span>
+            <span class="n">momentum</span> <span class="err">←</span> <span class="mf">0.8</span>
+        <span class="k">if</span> <span class="n">t</span> <span class="o">==</span> <span class="mi">100</span><span class="p">:</span>
+            <span class="n">P</span> <span class="err">←</span> <span class="n">P</span> <span class="o">/</span> <span class="mi">4</span>      <span class="c1"># 结束早期夸张</span>
+
+    <span class="k">return</span> <span class="n">Y</span>
+</code></pre>
+</div>
+
+<ul>
+<li><p><strong>复杂度</strong></p>
+
+<ul>
+<li>高维相似度计算： <span class="math">O(n^2 d)</span>（可用近似算法如 Barnes–Hut 或 FFT 加速到 <span class="math">O(n\log n)</span>）</li>
+<li>每次迭代梯度计算： <span class="math">O(n^2)</span>（同样可借助近似方法加速）</li>
+</ul></li>
+</ul>
+
+</article>
+</body>
+</html>

@@ -1,0 +1,212 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>t-test</title>
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css" rel="stylesheet"/>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: #ffffff;
+            color: #333;
+            max-width: 900px;
+            margin: auto;
+            padding: 2rem;
+        }
+        h1, h2, h3 {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.3em;
+            margin-top: 2em;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 1em;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: Consolas, Monaco, monospace;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['\(','\)']],
+    displayMath: [['$$','$$']]
+  },
+  options: {
+    renderActions: {
+      find_script_mathtex: [10, function (doc) {
+        for (const node of document.querySelectorAll('.math')) {
+          const math = node.textContent;
+          const script = document.createElement('script');
+          script.type = 'math/tex';
+          script.text = math;
+          node.replaceWith(script);
+        }
+      }, '']
+    }
+  }
+};
+</script>
+
+    <script id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+</head>
+<body>
+<article>
+<h1 id="t-test">t-test</h1>
+
+<p><ul><li style="margin-left:0px"><a href="#t-test">t-test</a></li>
+<li style="margin-left:20px"><a href="#1-算法介绍">1. 算法介绍</a></li>
+<li style="margin-left:20px"><a href="#2-公式及原理">2. 公式及原理</a></li>
+<li style="margin-left:20px"><a href="#3-伪代码">3. 伪代码</a></li></ul></p>
+
+<h2 id="1-算法介绍">1. 算法介绍</h2>
+
+<ul>
+<li><p><strong>背景与目标</strong>
+ 在基因表达差异分析中，常用两组（实验组 vs. 对照组）的独立样本 t 检验（two-sample t-test）来判断某一基因在两种处理下表达水平的均值是否存在显著差异。</p>
+
+<blockquote>
+  <p>核心目标：检验基因在实验组和对照组的平均表达值 <span class="math">\mu_1</span> 与 <span class="math">\mu_2</span> 是否相等，即</p>
+  
+  <p>$$
+  H_0:\;\mu_1 = \mu_2,\quad H_A:\;\mu_1 \neq \mu_2.
+  $$</p>
+</blockquote></li>
+<li><p><strong>应用场景</strong></p>
+
+<ul>
+<li>RNA-seq、微阵列等高通量数据的单基因差异表达初步筛选</li>
+<li>简单实验设计下的小样本差异检测</li>
+<li>与多重检验校正方法（如 FDR）联合使用</li>
+</ul></li>
+<li><p><strong>核心思路</strong></p>
+
+<ol>
+<li>分别计算两组样本的均值和方差；</li>
+<li>构造 t 统计量，反映两组均值差异相对于组内变异的大小；</li>
+<li>根据 t 分布计算双侧 p 值，判断差异显著性。</li>
+</ol></li>
+</ul>
+
+<hr />
+
+<h2 id="2-公式及原理">2. 公式及原理</h2>
+
+<p><strong>2.1 样本统计量</strong>
+   对照组样本表达值 <span class="math">{x_{1i}}_{i=1}^{n_1}</span>，实验组样本表达值 <span class="math">{x_{2j}}_{j=1}^{n_2}</span>：</p>
+
+<p>$$
+     \bar{x}_1 = \frac{1}{n_1}\sum_{i=1}^{n_1}x_{1i},\quad
+     \bar{x}_2 = \frac{1}{n_2}\sum_{j=1}^{n_2}x_{2j};
+   $$</p>
+
+<p>$$
+     s_1^2 = \frac{1}{n_1-1}\sum_{i=1}^{n_1}(x_{1i}-\bar{x}_1)^2,\quad
+     s_2^2 = \frac{1}{n_2-1}\sum_{j=1}^{n_2}(x_{2j}-\bar{x}_2)^2.
+   $$</p>
+
+<p><strong>2.2 等方差 t 检验（pooled）</strong></p>
+
+<ol>
+<li><p><strong>合并方差</strong></p>
+
+<p>$$
+    s_p^2
+    = \frac{(n_1-1)\,s_1^2 + (n_2-1)\,s_2^2}{n_1 + n_2 - 2}.
+  $$</p></li>
+<li><p><strong>t 统计量</strong></p>
+
+<p>$$
+    t = \frac{\bar{x}_1 - \bar{x}_2}
+             {s_p\,\sqrt{\frac{1}{n_1} + \frac{1}{n_2}}}.
+  $$</p></li>
+<li><p><strong>自由度</strong></p>
+
+<p>$$
+     \mathrm{df} = n_1 + n_2 - 2.
+   $$</p>
+
+<p><strong>2.3 Welch’s t 检验（不等方差）</strong>
+当两组方差明显不等时，使用 Welch 校正：</p>
+
+<p>$$
+  t = \frac{\bar{x}_1 - \bar{x}_2}
+           {\sqrt{\frac{s_1^2}{n_1} + \frac{s_2^2}{n_2}}},\quad
+  \mathrm{df}
+  = \frac{\bigl(\tfrac{s_1^2}{n_1}+\tfrac{s_2^2}{n_2}\bigr)^2}
+         {\tfrac{(s_1^2/n_1)^2}{n_1-1} + \tfrac{(s_2^2/n_2)^2}{n_2-1}}.
+$$</p>
+
+<p><strong>2.4 p 值计算</strong>
+计算双侧 p 值：</p>
+
+<p>$$
+  p = 2 \,\bigl[1 - F_{t}(|t|;\,\mathrm{df})\bigr],
+$$</p>
+
+<p>其中 <span class="math">F_{t}(\cdot;\,\mathrm{df})</span> 为自由度为 df 的 t 分布累计函数。</p></li>
+</ol>
+
+<hr />
+
+<h2 id="3-伪代码">3. 伪代码</h2>
+
+<div class="codehilite">
+<pre><span></span><code><span class="c1"># 输入</span>
+<span class="c1">#   X1: 对照组表达值数组，长度 n1</span>
+<span class="c1">#   X2: 实验组表达值数组，长度 n2</span>
+<span class="c1">#   equal_var: 布尔，True→等方差检验, False→Welch 校正</span>
+<span class="c1"># 输出</span>
+<span class="c1">#   t_stat: t 统计量</span>
+<span class="c1">#   df: 自由度</span>
+<span class="c1">#   p_value: 双侧 p 值</span>
+
+<span class="n">function</span> <span class="n">two_sample_t_test</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">equal_var</span><span class="p">):</span>
+    <span class="n">n1</span> <span class="err">←</span> <span class="n">length</span><span class="p">(</span><span class="n">X1</span><span class="p">);</span>   <span class="n">n2</span> <span class="err">←</span> <span class="n">length</span><span class="p">(</span><span class="n">X2</span><span class="p">)</span>
+    <span class="n">μ1</span> <span class="err">←</span> <span class="n">mean</span><span class="p">(</span><span class="n">X1</span><span class="p">);</span>     <span class="n">μ2</span> <span class="err">←</span> <span class="n">mean</span><span class="p">(</span><span class="n">X2</span><span class="p">)</span>
+    <span class="n">s1_sq</span> <span class="err">←</span> <span class="n">variance</span><span class="p">(</span><span class="n">X1</span><span class="p">)</span>  <span class="c1"># 分母 n1−1</span>
+    <span class="n">s2_sq</span> <span class="err">←</span> <span class="n">variance</span><span class="p">(</span><span class="n">X2</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">equal_var</span><span class="p">:</span>
+        <span class="c1"># pooled variance</span>
+        <span class="n">sp_sq</span> <span class="err">←</span> <span class="p">((</span><span class="n">n1</span><span class="err">−</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">s1_sq</span> <span class="o">+</span> <span class="p">(</span><span class="n">n2</span><span class="err">−</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">s2_sq</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">n1</span> <span class="o">+</span> <span class="n">n2</span> <span class="err">−</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">t_stat</span> <span class="err">←</span> <span class="p">(</span><span class="n">μ1</span> <span class="err">−</span> <span class="n">μ2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">sqrt</span><span class="p">(</span><span class="n">sp_sq</span><span class="p">)</span> <span class="o">*</span> <span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">n1</span> <span class="o">+</span> <span class="mi">1</span><span class="o">/</span><span class="n">n2</span><span class="p">))</span>
+        <span class="n">df</span> <span class="err">←</span> <span class="n">n1</span> <span class="o">+</span> <span class="n">n2</span> <span class="err">−</span> <span class="mi">2</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Welch’s t</span>
+        <span class="n">t_stat</span> <span class="err">←</span> <span class="p">(</span><span class="n">μ1</span> <span class="err">−</span> <span class="n">μ2</span><span class="p">)</span> <span class="o">/</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">s1_sq</span><span class="o">/</span><span class="n">n1</span> <span class="o">+</span> <span class="n">s2_sq</span><span class="o">/</span><span class="n">n2</span><span class="p">)</span>
+        <span class="n">numerator</span> <span class="err">←</span> <span class="p">(</span><span class="n">s1_sq</span><span class="o">/</span><span class="n">n1</span> <span class="o">+</span> <span class="n">s2_sq</span><span class="o">/</span><span class="n">n2</span><span class="p">)</span><span class="o">^</span><span class="mi">2</span>
+        <span class="n">denominator</span> <span class="err">←</span> <span class="p">(</span><span class="n">s1_sq</span><span class="o">/</span><span class="n">n1</span><span class="p">)</span><span class="o">^</span><span class="mi">2</span><span class="o">/</span><span class="p">(</span><span class="n">n1</span><span class="err">−</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">s2_sq</span><span class="o">/</span><span class="n">n2</span><span class="p">)</span><span class="o">^</span><span class="mi">2</span><span class="o">/</span><span class="p">(</span><span class="n">n2</span><span class="err">−</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">df</span> <span class="err">←</span> <span class="n">numerator</span> <span class="o">/</span> <span class="n">denominator</span>
+
+    <span class="c1"># 双侧 p 值</span>
+    <span class="n">p_value</span> <span class="err">←</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="err">−</span> <span class="n">t_cdf</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">t_stat</span><span class="p">),</span> <span class="n">df</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">t_stat</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">p_value</span>
+</code></pre>
+</div>
+
+<ul>
+<li><strong>时间复杂度</strong>：<span class="math">O(n_1 + n_2)</span></li>
+<li><p><strong>注意事项</strong>：</p>
+
+<ul>
+<li>样本量过小时，正态性假设更关键；</li>
+<li>基因组范围内多重检验时需配合 FDR 或 Bonferroni 校正；</li>
+<li>对极低表达或零膨胀数据，建议先做滤除或转换（如 log2(x+1)）。</li>
+</ul></li>
+</ul>
+
+</article>
+</body>
+</html>

@@ -1,0 +1,237 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>PCA</title>
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css" rel="stylesheet"/>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: #ffffff;
+            color: #333;
+            max-width: 900px;
+            margin: auto;
+            padding: 2rem;
+        }
+        h1, h2, h3 {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.3em;
+            margin-top: 2em;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 1em;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: Consolas, Monaco, monospace;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['\(','\)']],
+    displayMath: [['$$','$$']]
+  },
+  options: {
+    renderActions: {
+      find_script_mathtex: [10, function (doc) {
+        for (const node of document.querySelectorAll('.math')) {
+          const math = node.textContent;
+          const script = document.createElement('script');
+          script.type = 'math/tex';
+          script.text = math;
+          node.replaceWith(script);
+        }
+      }, '']
+    }
+  }
+};
+</script>
+
+    <script id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+</head>
+<body>
+<article>
+<h1 id="pca">PCA</h1>
+
+<p><ul><li style="margin-left:0px"><a href="#pca">PCA</a></li>
+<li style="margin-left:20px"><a href="#1-算法介绍">1. 算法介绍</a></li>
+<li style="margin-left:20px"><a href="#2-公式及原理">2. 公式及原理</a></li>
+<li style="margin-left:20px"><a href="#3-伪代码">3. 伪代码</a></li></ul></p>
+
+<h2 id="1-算法介绍">1. 算法介绍</h2>
+
+<ul>
+<li><p><strong>背景与目标</strong>
+ 主成分分析（PCA）最早由 Karl Pearson 在1901年提出，是一种无监督的线性降维方法。它的核心目标是：</p>
+
+<blockquote>
+  <p>在保留数据总方差（信息量）尽可能多的前提下，将高维数据投影到低维空间。</p>
+</blockquote></li>
+<li><p><strong>应用场景</strong></p>
+
+<ul>
+<li>降维与可视化：将高维样本映射到2D/3D以便可视化</li>
+<li>去噪：去除小方差方向上的噪声</li>
+<li>特征压缩：在训练机器学习模型前减少输入维度，提升效率</li>
+<li>数据预处理：常用作后续分类、聚类等算法的输入</li>
+</ul></li>
+<li><p><strong>核心思路</strong></p>
+
+<ol>
+<li><strong>数据中心化</strong>（Zero-mean）——去除均值后，保证后续方差统计不受偏移影响；</li>
+<li><strong>协方差矩阵</strong>或<strong>SVD</strong>分解——捕捉变量之间的线性相关结构；</li>
+<li><strong>特征向量</strong>（主成分方向）对应最大方差方向；</li>
+<li><strong>投影</strong>——将原始数据投影到前 <span class="math">k</span> 个主成分，完成降维。</li>
+</ol></li>
+</ul>
+
+<hr />
+
+<h2 id="2-公式及原理">2. 公式及原理</h2>
+
+<p><strong>2.1 方差最大化视角</strong></p>
+
+<ul>
+<li><p>寻找一个单位向量 <span class="math">\mathbf{w}</span>，使得投影后的一维变量 <span class="math">y_i = \mathbf{w}^\top \mathbf{x}_i</span> 具有最大方差：</p>
+
+<p>$$
+   \max_{\|\mathbf{w}\|=1} \quad \mathrm{Var}(y)
+   = \max_{\|\mathbf{w}\|=1} \frac{1}{n}\sum_{i=1}^n (\mathbf{w}^\top \mathbf{x}_i - \overline{y})^2
+   = \max_{\|\mathbf{w}\|=1} \mathbf{w}^\top \mathbf{C}\,\mathbf{w}
+ $$</p>
+
+<p>其中 <span class="math">\mathbf{C}</span> 是样本协方差矩阵。</p></li>
+<li><p>引入拉格朗日乘子 <span class="math">\lambda</span>，解</p>
+
+<p>$$
+    \mathcal{L}(\mathbf{w},\lambda)
+    = \mathbf{w}^\top \mathbf{C}\,\mathbf{w} - \lambda(\mathbf{w}^\top \mathbf{w}-1),
+  $$</p>
+
+<p>对 <span class="math">\mathbf{w}</span> 求导并令梯度为零，得到</p>
+
+<p>$$
+    \mathbf{C}\,\mathbf{w} = \lambda\,\mathbf{w},
+  $$</p>
+
+<p>即标准的<strong>特征值问题</strong>。最大方差对应最大特征值 <span class="math">\lambda_1</span> 及其特征向量 <span class="math">\mathbf{v}_1</span>。</p>
+
+<p><strong>2.2 协方差矩阵构造</strong></p></li>
+</ul>
+
+<ol>
+<li>原始数据矩阵 <span class="math">\mathbf{X}</span> 为 <span class="math">n\times d</span>，每行一个样本。</li>
+<li><p>样本均值：</p>
+
+<p>$$
+    \boldsymbol{\mu} = \frac{1}{n}\sum_{i=1}^n \mathbf{x}_i \quad (d\text{-维向量})
+  $$</p></li>
+<li><p>中心化数据：</p>
+
+<p>$$
+    \mathbf{X}_{\mathrm{c}} = \mathbf{X} - \mathbf{1}\,\boldsymbol{\mu}^\top
+  $$</p></li>
+<li><p>协方差矩阵：</p>
+
+<p>$$
+     \mathbf{C}
+     = \frac{1}{n-1}\,\mathbf{X}_{\mathrm{c}}^\top\,\mathbf{X}_{\mathrm{c}}
+     \quad (d\times d)
+   $$</p>
+
+<p><strong>2.3 特征分解与降维</strong></p></li>
+</ol>
+
+<ul>
+<li><p>对 <span class="math">\mathbf{C}</span> 做特征值分解：</p>
+
+<p>$$
+   \mathbf{C} = \mathbf{V}\,\boldsymbol{\Lambda}\,\mathbf{V}^\top,
+   \quad
+   \boldsymbol{\Lambda} = \mathrm{diag}(\lambda_1,\dots,\lambda_d),
+   \quad
+   \lambda_1 \ge \lambda_2 \ge \dots \ge \lambda_d.
+ $$</p></li>
+<li>取前 <span class="math">k</span> 个特征向量组成矩阵
+<span class="math">\mathbf{V}_k = [\mathbf{v}_1,\dots,\mathbf{v}_k]</span>（维度 <span class="math">d\times k</span>）。</li>
+<li><p>投影得到低维表示：</p>
+
+<p>$$
+    \mathbf{Z} = \mathbf{X}_{\mathrm{c}}\,\mathbf{V}_k
+    \quad (n\times k)
+  $$</p>
+
+<p><strong>2.4 SVD 视角（可选）</strong></p></li>
+<li><p>对中心化矩阵 <span class="math">\mathbf{X}_{\mathrm{c}}</span> 做奇异值分解：</p>
+
+<p>$$
+   \mathbf{X}_{\mathrm{c}} = \mathbf{U}\,\boldsymbol{\Sigma}\,\mathbf{V}^\top,
+ $$</p>
+
+<p>则 <span class="math">\mathbf{C} = \frac{1}{n-1}\,\mathbf{V}\,\boldsymbol{\Sigma}^2\,\mathbf{V}^\top</span>，奇异值平方与特征值对应，<span class="math">\mathbf{V}</span> 的前 <span class="math">k</span> 列即主成分方向。</p></li>
+</ul>
+
+<hr />
+
+<h2 id="3-伪代码">3. 伪代码</h2>
+
+<div class="codehilite">
+<pre><span></span><code><span class="c1"># 输入</span>
+<span class="c1">#   X: 原始数据矩阵，形状 (n, d)</span>
+<span class="c1">#   k: 降维后目标维度（k ≤ d）</span>
+<span class="c1"># 输出</span>
+<span class="c1">#   Z: 降维后数据，形状 (n, k)</span>
+<span class="c1">#   V_k: 主成分方向矩阵，形状 (d, k)</span>
+
+<span class="n">function</span> <span class="n">PCA</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+    <span class="c1"># 1) 计算样本均值</span>
+    <span class="n">μ</span> <span class="err">←</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">n</span><span class="p">)</span> <span class="o">*</span> <span class="n">sum_rows</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>             <span class="c1"># μ: (d,)</span>
+
+    <span class="c1"># 2) 数据中心化</span>
+    <span class="n">X_c</span> <span class="err">←</span> <span class="n">X</span> <span class="err">−</span> <span class="n">repeat_row_vector</span><span class="p">(</span><span class="n">μ</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>  <span class="c1"># X_c: (n, d)</span>
+
+    <span class="c1"># 3) 计算协方差矩阵</span>
+    <span class="n">C</span> <span class="err">←</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="n">n</span><span class="err">−</span><span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="n">X_cᵀ</span> <span class="err">×</span> <span class="n">X_c</span>         <span class="c1"># C: (d, d)</span>
+
+    <span class="c1"># 4) 特征值分解</span>
+    <span class="p">(</span><span class="n">Λ</span><span class="p">,</span> <span class="n">V</span><span class="p">)</span> <span class="err">←</span> <span class="n">eigendecompose</span><span class="p">(</span><span class="n">C</span><span class="p">)</span>         <span class="c1"># Λ: (d,), V: (d, d)</span>
+    <span class="c1">#    Λ 按从大到小排序，V 列向量对应特征向量</span>
+
+    <span class="c1"># 5) 取前 k 个特征向量</span>
+    <span class="n">V_k</span> <span class="err">←</span> <span class="n">V</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">:</span><span class="n">k</span><span class="p">]</span>                    <span class="c1"># V_k: (d, k)</span>
+
+    <span class="c1"># 6) 数据投影</span>
+    <span class="n">Z</span> <span class="err">←</span> <span class="n">X_c</span> <span class="err">×</span> <span class="n">V_k</span>                      <span class="c1"># Z: (n, k)</span>
+
+    <span class="k">return</span> <span class="n">Z</span><span class="p">,</span> <span class="n">V_k</span>
+</code></pre>
+</div>
+
+<ul>
+<li><p><strong>时间复杂度</strong></p>
+
+<ul>
+<li>协方差矩阵构造： <span class="math">O(nd^2)</span></li>
+<li>特征分解： <span class="math">O(d^3)</span>（当 <span class="math">d</span> 很大时可用 SVD + 随机投影等近似方法加速）</li>
+</ul></li>
+<li><p><strong>内存注意</strong></p>
+
+<ul>
+<li>若 <span class="math">d\gg n</span>，更倾向于直接对 <span class="math">X_c</span> 做 SVD，以节省构造 <span class="math">d\times d</span> 矩阵的内存。</li>
+</ul></li>
+</ul>
+
+</article>
+</body>
+</html>

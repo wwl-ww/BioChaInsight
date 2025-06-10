@@ -1,0 +1,201 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Needleman-Wunsch</title>
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css" rel="stylesheet"/>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: #ffffff;
+            color: #333;
+            max-width: 900px;
+            margin: auto;
+            padding: 2rem;
+        }
+        h1, h2, h3 {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.3em;
+            margin-top: 2em;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 1em;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: Consolas, Monaco, monospace;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['\(','\)']],
+    displayMath: [['$$','$$']]
+  },
+  options: {
+    renderActions: {
+      find_script_mathtex: [10, function (doc) {
+        for (const node of document.querySelectorAll('.math')) {
+          const math = node.textContent;
+          const script = document.createElement('script');
+          script.type = 'math/tex';
+          script.text = math;
+          node.replaceWith(script);
+        }
+      }, '']
+    }
+  }
+};
+</script>
+
+    <script id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+</head>
+<body>
+<article>
+<h1 id="needleman-wunsch">Needleman-Wunsch</h1>
+
+<p><ul><li style="margin-left:0px"><a href="#needleman-wunsch">Needleman-Wunsch</a></li>
+<li style="margin-left:20px"><a href="#1-算法介绍">1. 算法介绍</a></li>
+<li style="margin-left:20px"><a href="#2-公式及原理">2. 公式及原理</a></li>
+<li style="margin-left:20px"><a href="#3-伪代码">3. 伪代码</a></li></ul></p>
+
+<h2 id="1-算法介绍">1. 算法介绍</h2>
+
+<ul>
+<li><p><strong>背景与目标</strong>
+ Needleman–Wunsch 算法由 Saul B. Needleman 和 Christian D. Wunsch 于1970年提出，是用于生物序列（如蛋白质或 DNA）<strong>全局比对</strong>（global alignment）的经典动态规划方法。其核心目标是：</p>
+
+<blockquote>
+  <p>在允许插入、缺失（gap）和错配的情况下，找到两条序列从头到尾的最优比对，使得总体得分最大。</p>
+</blockquote></li>
+<li><p><strong>应用场景</strong></p>
+
+<ul>
+<li>两条全长蛋白质序列或 DNA 序列的全局比对</li>
+<li>构建进化距离矩阵、聚类与系统发生学分析</li>
+<li>作为后续更复杂比对（如多序列比对、局部比对）的基础</li>
+</ul></li>
+<li><p><strong>核心思路</strong></p>
+
+<ol>
+<li>构建一个大小为 <span class="math">(m+1)\times(n+1)</span> 的积分得分矩阵 <span class="math">F</span>，其中 <span class="math">m,n</span> 分别为两序列长度；</li>
+<li>以线性或 affine gap penalty 设定缺口代价；</li>
+<li>通过动态规划递推填表，计算从起点到任意 <span class="math">(i,j)</span> 的最优比对得分；</li>
+<li>从右下角回溯（traceback），还原最佳全局比对路径。</li>
+</ol></li>
+</ul>
+
+<hr />
+
+<h2 id="2-公式及原理">2. 公式及原理</h2>
+
+<p><strong>2.1 符号与评分函数</strong></p>
+
+<ul>
+<li>序列 <span class="math">\mathbf{A}=a_1a_2\cdots a_m</span>，<span class="math">\mathbf{B}=b_1b_2\cdots b_n</span>。</li>
+<li><p>设定匹配／错配得分函数：</p>
+
+<p>$$
+   s(a_i,b_j) =
+   \begin{cases}
+     +\alpha, &amp; a_i = b_j \quad(\text{match})\
+     -\beta,  &amp; a_i \neq b_j \quad(\text{mismatch})
+   \end{cases}
+ $$</p></li>
+<li><p>线性缺口惩罚：对于连续插入或删除长度为 <span class="math">k</span>，惩罚为 <span class="math">-k\cdot d</span>。</p>
+
+<p><strong>2.2 初始化</strong></p>
+
+<p>$$
+  F[0,0] = 0,\quad
+  F[i,0] = -i\cdot d\quad (i=1,\dots,m),\quad
+  F[0,j] = -j\cdot d\quad (j=1,\dots,n).
+$$</p>
+
+<p><strong>2.3 递推公式</strong>
+对任意 <span class="math">1\le i\le m</span>, <span class="math">1\le j\le n</span>，</p>
+
+<p>$$
+  F[i,j] = \max!\begin{cases}
+    F[i-1,\,j-1] + s(a_i,b_j),\
+    F[i-1,\,j] - d,\
+    F[i,\,j-1] - d.
+  \end{cases}
+$$</p>
+
+<p><strong>2.4 回溯（Traceback）</strong>
+从 <span class="math">(i,j)=(m,n)</span> 开始：</p></li>
+<li><p>如果 <span class="math">F[i,j] = F[i-1,j-1] + s(a_i,b_j)</span>，则对齐 <span class="math">a_i</span> 与 <span class="math">b_j</span>，移动 <span class="math">(i,j)\to(i-1,j-1)</span>；</p></li>
+<li>否则若 <span class="math">F[i,j] = F[i-1,j] - d</span>，则对齐 <span class="math">a_i</span> 与 gap，移动 <span class="math">(i,j)\to(i-1,j)</span>；</li>
+<li>否则对齐 gap 与 <span class="math">b_j</span>，移动 <span class="math">(i,j)\to(i,j-1)</span>。
+直到回到 <span class="math">(0,0)</span>。</li>
+</ul>
+
+<hr />
+
+<h2 id="3-伪代码">3. 伪代码</h2>
+
+<div class="codehilite">
+<pre><span></span><code><span class="c1"># 输入</span>
+<span class="c1">#   A[1..m], B[1..n]: 待比对序列</span>
+<span class="c1">#   s(a,b): 匹配得分函数</span>
+<span class="c1">#   d: 线性 gap penalty</span>
+<span class="c1"># 输出</span>
+<span class="c1">#   aligned_A, aligned_B: 两个同长的对齐序列</span>
+
+<span class="n">function</span> <span class="n">NeedlemanWunsch</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+    <span class="n">m</span> <span class="err">←</span> <span class="n">length</span><span class="p">(</span><span class="n">A</span><span class="p">);</span> <span class="n">n</span> <span class="err">←</span> <span class="n">length</span><span class="p">(</span><span class="n">B</span><span class="p">)</span>
+
+    <span class="c1"># 1) 初始化矩阵 F 大小 (m+1)x(n+1)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="mf">0.</span><span class="o">.</span><span class="n">m</span><span class="p">:</span>
+        <span class="n">F</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="err">←</span> <span class="o">-</span><span class="n">i</span> <span class="o">*</span> <span class="n">d</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="mf">0.</span><span class="o">.</span><span class="n">n</span><span class="p">:</span>
+        <span class="n">F</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="err">←</span> <span class="o">-</span><span class="n">j</span> <span class="o">*</span> <span class="n">d</span>
+
+    <span class="c1"># 2) 填表</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="mf">1.</span><span class="o">.</span><span class="n">m</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="mf">1.</span><span class="o">.</span><span class="n">n</span><span class="p">:</span>
+            <span class="k">match</span> <span class="err">←</span> <span class="n">F</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">s</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">B</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+            <span class="n">delete</span> <span class="err">←</span> <span class="n">F</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>   <span class="o">-</span> <span class="n">d</span>
+            <span class="n">insert</span> <span class="err">←</span> <span class="n">F</span><span class="p">[</span><span class="n">i</span><span class="p">,</span>  <span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">d</span>
+            <span class="n">F</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="err">←</span> <span class="nb">max</span><span class="p">(</span><span class="n">match</span><span class="p">,</span> <span class="n">delete</span><span class="p">,</span> <span class="n">insert</span><span class="p">)</span>
+
+    <span class="c1"># 3) 回溯还原比对</span>
+    <span class="n">i</span> <span class="err">←</span> <span class="n">m</span><span class="p">;</span> <span class="n">j</span> <span class="err">←</span> <span class="n">n</span>
+    <span class="n">aligned_A</span><span class="p">,</span> <span class="n">aligned_B</span> <span class="err">←</span> <span class="n">empty</span> <span class="n">strings</span>
+    <span class="k">while</span> <span class="n">i</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">or</span> <span class="n">j</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">i</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">j</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">F</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">F</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">s</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">B</span><span class="p">[</span><span class="n">j</span><span class="p">]):</span>
+            <span class="n">aligned_A</span><span class="o">.</span><span class="n">prepend</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">aligned_B</span><span class="o">.</span><span class="n">prepend</span><span class="p">(</span><span class="n">B</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+            <span class="n">i</span> <span class="err">←</span> <span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">;</span> <span class="n">j</span> <span class="err">←</span> <span class="n">j</span><span class="o">-</span><span class="mi">1</span>
+        <span class="k">else</span> <span class="k">if</span> <span class="n">i</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">F</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">F</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">d</span><span class="p">:</span>
+            <span class="n">aligned_A</span><span class="o">.</span><span class="n">prepend</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">aligned_B</span><span class="o">.</span><span class="n">prepend</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)</span>
+            <span class="n">i</span> <span class="err">←</span> <span class="n">i</span><span class="o">-</span><span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">aligned_A</span><span class="o">.</span><span class="n">prepend</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)</span>
+            <span class="n">aligned_B</span><span class="o">.</span><span class="n">prepend</span><span class="p">(</span><span class="n">B</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+            <span class="n">j</span> <span class="err">←</span> <span class="n">j</span><span class="o">-</span><span class="mi">1</span>
+
+    <span class="k">return</span> <span class="n">aligned_A</span><span class="p">,</span> <span class="n">aligned_B</span>
+</code></pre>
+</div>
+
+<ul>
+<li><strong>时间复杂度</strong>：<span class="math">O(m \times n)</span></li>
+<li><strong>空间复杂度</strong>：<span class="math">O(m \times n)</span>（可用带回溯链的 Hirschberg 算法降到 <span class="math">O(m+n)</span>）</li>
+</ul>
+
+</article>
+</body>
+</html>

@@ -1,0 +1,174 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>K-meansPP</title>
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css" rel="stylesheet"/>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: #ffffff;
+            color: #333;
+            max-width: 900px;
+            margin: auto;
+            padding: 2rem;
+        }
+        h1, h2, h3 {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.3em;
+            margin-top: 2em;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 1em;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: Consolas, Monaco, monospace;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['\(','\)']],
+    displayMath: [['$$','$$']]
+  },
+  options: {
+    renderActions: {
+      find_script_mathtex: [10, function (doc) {
+        for (const node of document.querySelectorAll('.math')) {
+          const math = node.textContent;
+          const script = document.createElement('script');
+          script.type = 'math/tex';
+          script.text = math;
+          node.replaceWith(script);
+        }
+      }, '']
+    }
+  }
+};
+</script>
+
+    <script id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+</head>
+<body>
+<article>
+<h1 id="k-means">K-means++</h1>
+
+<p><ul><li style="margin-left:0px"><a href="#k-means">K-means++</a></li>
+<li style="margin-left:20px"><a href="#1-算法介绍">1. 算法介绍</a></li>
+<li style="margin-left:20px"><a href="#2-公式及原理">2. 公式及原理</a></li>
+<li style="margin-left:20px"><a href="#3-伪代码">3. 伪代码</a></li></ul></p>
+
+<h2 id="1-算法介绍">1. 算法介绍</h2>
+
+<ul>
+<li><p><strong>背景与目标</strong>
+ k-means++ 是 David Arthur 和 Sergei Vassilvitskii 于2007年提出的改进 k-means 初始化方法，其核心目标是：</p>
+
+<blockquote>
+  <p>在保证聚类质量的前提下，通过更合理地选择初始簇心，减少 k-means 对随机初始化的敏感性，加快收敛并降低陷入次优解的风险。</p>
+</blockquote></li>
+<li><p><strong>应用场景</strong></p>
+
+<ul>
+<li>所有使用 k-means 聚类但对初始化鲁棒性和收敛速度有较高要求的场景</li>
+<li>大规模数据聚类预处理，减少多次重启的计算成本</li>
+</ul></li>
+<li><p><strong>核心思路</strong></p>
+
+<ol>
+<li><strong>第一簇心</strong>：随机从样本集中任选一个点；</li>
+<li><strong>后续簇心</strong>：对于每个样本点，计算其与已有簇心的最小距离平方 <span class="math">D(x)^2</span>；</li>
+<li><strong>概率采样</strong>：按权重 <span class="math">D(x)^2</span> 对样本进行加权随机抽样，选出下一个簇心；</li>
+<li><strong>重复</strong>：直到选出 <span class="math">K</span> 个簇心，再执行标准 k-means 算法。</li>
+</ol></li>
+</ul>
+
+<hr />
+
+<h2 id="2-公式及原理">2. 公式及原理</h2>
+
+<p>设已选出的簇心集合为 <span class="math">{\mu_1,\dots,\mu_c}</span>，对任意样本点 <span class="math">\mathbf{x}</span>：</p>
+
+<ol>
+<li><p><strong>最小距离平方</strong></p>
+
+<p>$$
+    D(\mathbf{x})^2 = \min_{1\le i\le c}\|\mathbf{x}-\mu_i\|^2.
+  $$</p></li>
+<li><p><strong>采样概率</strong>
+  对所有样本归一化后，样本 <span class="math">\mathbf{x}</span> 被选为下一个簇心的概率为：</p>
+
+<p>$$
+    P(\mathbf{x}) = \frac{D(\mathbf{x})^2}{\sum_{x'}D(x')^2}.
+  $$</p></li>
+<li><p><strong>加速变体</strong>
+  实际实现中可用“距离二分桶”或近似方法快速更新 <span class="math">D(x)</span>，以降低每次选点的计算开销。</p></li>
+</ol>
+
+<hr />
+
+<h2 id="3-伪代码">3. 伪代码</h2>
+
+<div class="codehilite">
+<pre><span></span><code><span class="c1"># 输入</span>
+<span class="c1">#   X: 数据矩阵，形状 (n, d)</span>
+<span class="c1">#   K: 簇的个数</span>
+<span class="c1"># 输出</span>
+<span class="c1">#   centroids: 初始簇心列表，长度 K</span>
+
+<span class="n">function</span> <span class="n">kmeans_pp_init</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">K</span><span class="p">):</span>
+    <span class="n">n</span><span class="p">,</span> <span class="n">d</span> <span class="err">←</span> <span class="n">shape</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+    <span class="n">centroids</span> <span class="err">←</span> <span class="n">empty</span> <span class="nb">list</span>
+
+    <span class="c1"># 1) 随机选第一个簇心</span>
+    <span class="n">idx0</span> <span class="err">←</span> <span class="n">random_integer</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">centroids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">idx0</span><span class="p">])</span>
+
+    <span class="c1"># 2) 依次选取剩余 K-1 个簇心</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="mi">2</span><span class="err">…</span><span class="n">K</span><span class="p">:</span>
+        <span class="c1"># 2.1) 计算每个样本到最近已有簇心的距离平方</span>
+        <span class="n">D_sq</span> <span class="err">←</span> <span class="n">array</span> <span class="n">of</span> <span class="n">length</span> <span class="n">n</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="mi">1</span><span class="err">…</span><span class="n">n</span><span class="p">:</span>
+            <span class="n">D_sq</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="err">←</span> <span class="n">min_</span><span class="p">{</span><span class="n">μ</span> <span class="err">∈</span> <span class="n">centroids</span><span class="p">}</span> <span class="err">‖</span><span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">μ</span><span class="err">‖²</span>
+
+        <span class="c1"># 2.2) 按 D_sq 权重进行随机抽样</span>
+        <span class="n">sum_D</span> <span class="err">←</span> <span class="nb">sum</span><span class="p">(</span><span class="n">D_sq</span><span class="p">)</span>
+        <span class="n">probs</span> <span class="err">←</span> <span class="n">D_sq</span> <span class="o">/</span> <span class="n">sum_D</span>     <span class="c1"># 归一化概率</span>
+        <span class="n">idx</span> <span class="err">←</span> <span class="n">sample_index_with_probability</span><span class="p">(</span><span class="n">probs</span><span class="p">)</span>
+        <span class="n">centroids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">centroids</span>
+
+<span class="c1"># 后续可将 centroids 传入标准 KMeans 进行迭代</span>
+</code></pre>
+</div>
+
+<ul>
+<li><p><strong>时间复杂度</strong></p>
+
+<ul>
+<li>每次选新簇心计算距离：<span class="math">O(n\,c\,d)</span>，总计选取 K 个簇心约 <span class="math">O(n\,K\,d)</span></li>
+<li>相比随机初始化，多了这一步但通常能显著减少后续迭代次数。</li>
+</ul></li>
+<li><p><strong>注意事项</strong></p>
+
+<ul>
+<li>随机数种子可固定以保证可复现；</li>
+<li>对极大规模数据可结合分层抽样或局部敏感哈希加速采样。</li>
+</ul></li>
+</ul>
+
+</article>
+</body>
+</html>

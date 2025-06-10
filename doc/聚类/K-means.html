@@ -1,0 +1,211 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>K-means</title>
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css" rel="stylesheet"/>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: #ffffff;
+            color: #333;
+            max-width: 900px;
+            margin: auto;
+            padding: 2rem;
+        }
+        h1, h2, h3 {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.3em;
+            margin-top: 2em;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 1em;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: Consolas, Monaco, monospace;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['\(','\)']],
+    displayMath: [['$$','$$']]
+  },
+  options: {
+    renderActions: {
+      find_script_mathtex: [10, function (doc) {
+        for (const node of document.querySelectorAll('.math')) {
+          const math = node.textContent;
+          const script = document.createElement('script');
+          script.type = 'math/tex';
+          script.text = math;
+          node.replaceWith(script);
+        }
+      }, '']
+    }
+  }
+};
+</script>
+
+    <script id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+</head>
+<body>
+<article>
+<h1 id="k-means">K-means</h1>
+
+<p><ul><li style="margin-left:0px"><a href="#k-means">K-means</a></li>
+<li style="margin-left:20px"><a href="#1-算法介绍">1. 算法介绍</a></li>
+<li style="margin-left:20px"><a href="#2-公式及原理">2. 公式及原理</a></li>
+<li style="margin-left:20px"><a href="#3-伪代码">3. 伪代码</a></li></ul></p>
+
+<h2 id="1-算法介绍">1. 算法介绍</h2>
+
+<ul>
+<li><p><strong>背景与目标</strong>
+ K-means 是最经典、最常用的原型聚类（prototype-based clustering）算法之一，由 Stuart Lloyd 于1957年提出，1982年被广泛推广。其核心目标是：</p>
+
+<blockquote>
+  <p>将给定的 <span class="math">n</span> 个数据点划分为 <span class="math">K</span> 个簇，使得簇内样本的相似度（通常用欧氏距离）最大化、簇间差异最大化。</p>
+</blockquote></li>
+<li><p><strong>应用场景</strong></p>
+
+<ul>
+<li>客户分群、市场细分</li>
+<li>图像分割（基于像素特征）</li>
+<li>文档聚类（基于文本向量）</li>
+<li>低维数据的快速可视化与预处理</li>
+</ul></li>
+<li><p><strong>核心思路</strong></p>
+
+<ol>
+<li><strong>初始化</strong>：在数据空间中随机选取 <span class="math">K</span> 个点作为初始簇心（centroid），或使用 k-means++ 改进；</li>
+<li><p><strong>迭代优化</strong>：</p>
+
+<ul>
+<li><strong>分配（Assignment）</strong>：将每个样本指派给最近的簇心；</li>
+<li><strong>更新（Update）</strong>：根据新的簇内样本重新计算簇心；</li>
+</ul></li>
+<li><strong>收敛判定</strong>：当簇心位置不再发生显著变化，或达到最大迭代次数时停止。</li>
+</ol></li>
+</ul>
+
+<hr />
+
+<h2 id="2-公式及原理">2. 公式及原理</h2>
+
+<p><strong>2.1 目标函数</strong>
+   K-means 旨在最小化簇内平方误差之和（Within-Cluster Sum of Squares, WCSS）：</p>
+
+<p>$$
+     J = \sum_{j=1}^K \sum_{\mathbf{x}_i \in C_j} \bigl\|\mathbf{x}_i - \boldsymbol{\mu}_j\bigr\|^2,
+   $$</p>
+
+<p>其中</p>
+
+<ul>
+<li><span class="math">\mathbf{x}_i</span> 为第 <span class="math">i</span> 个样本向量；</li>
+<li><span class="math">C_j</span> 为第 <span class="math">j</span> 个簇的样本集合；</li>
+<li><p><span class="math">\boldsymbol{\mu}_j = \frac{1}{|C_j|}\sum_{\mathbf{x}_i\in C_j}\mathbf{x}_i</span> 为第 <span class="math">j</span> 簇的中心。</p>
+
+<p><strong>2.2 分配步骤</strong>
+对每个样本 <span class="math">\mathbf{x}_i</span>，计算其到各簇心的欧氏距离，并指派给最近的簇：</p>
+
+<p>$$
+  c_i = \arg\min_{1 \le j \le K} \|\mathbf{x}_i - \boldsymbol{\mu}_j\|^2.
+$$</p>
+
+<p><strong>2.3 更新步骤</strong>
+对每个簇 <span class="math">j</span>，根据当前指派的样本重新计算簇心：</p>
+
+<p>$$
+  \boldsymbol{\mu}_j = \frac{1}{|C_j|}\sum_{{\mathbf{x}_i \mid c_i = j}}\mathbf{x}_i.
+$$</p>
+
+<p><strong>2.4 收敛条件</strong></p></li>
+<li><p>簇心位置前后迭代变化小于阈值：<span class="math">\|\boldsymbol{\mu}_j^{(t)} - \boldsymbol{\mu}_j^{(t-1)}\| &lt; \varepsilon</span>；</p></li>
+<li>达到预设最大迭代次数；</li>
+<li><p>目标函数 <span class="math">J</span> 的下降量低于阈值。</p>
+
+<p><strong>2.5 初始化选择</strong></p></li>
+<li><p><strong>随机初始化</strong>：随机选取 <span class="math">K</span> 个样本作为初始簇心，可能导致收敛到次优解；</p></li>
+<li><strong>k-means++</strong>：首个簇心随机，后续簇心按与已有簇心距离平方加权随机选取，能显著提高聚类质量和收敛速度。</li>
+</ul>
+
+<hr />
+
+<h2 id="3-伪代码">3. 伪代码</h2>
+
+<div class="codehilite">
+<pre><span></span><code><span class="c1"># 输入</span>
+<span class="c1">#   X: 原始数据矩阵，形状 (n, d)</span>
+<span class="c1">#   K: 簇的个数</span>
+<span class="c1">#   max_iter: 最大迭代次数</span>
+<span class="c1">#   ε: 收敛阈值（可选）</span>
+<span class="c1"># 输出</span>
+<span class="c1">#   c: 样本簇标号数组，长度 n，c[i] ∈ {1,…,K}</span>
+<span class="c1">#   μ: 簇心矩阵，形状 (K, d)</span>
+
+<span class="n">function</span> <span class="n">KMeans</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">max_iter</span><span class="p">,</span> <span class="n">ε</span><span class="p">):</span>
+    <span class="n">n</span><span class="p">,</span> <span class="n">d</span> <span class="err">←</span> <span class="n">shape</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+    <span class="c1"># 1) 初始化簇心 μ (可选 k-means++ 或 随机选样本)</span>
+    <span class="n">μ</span> <span class="err">←</span> <span class="n">initialize_centroids</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">K</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="mi">1</span><span class="err">…</span><span class="n">max_iter</span><span class="p">:</span>
+        <span class="c1"># 2) 分配步骤：指派每个样本到最近簇心</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="mi">1</span><span class="err">…</span><span class="n">n</span><span class="p">:</span>
+            <span class="n">distances</span> <span class="err">←</span> <span class="p">[</span><span class="err">‖</span><span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="err">−</span> <span class="n">μ</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="err">‖²</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="mi">1</span><span class="err">…</span><span class="n">K</span><span class="p">]</span>
+            <span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="err">←</span> <span class="n">argmin</span><span class="p">(</span><span class="n">distances</span><span class="p">)</span>
+
+        <span class="c1"># 3) 更新步骤：重新计算每个簇的中心</span>
+        <span class="n">μ_new</span> <span class="err">←</span> <span class="n">zero_matrix</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span>
+        <span class="n">counts</span> <span class="err">←</span> <span class="n">zero_vector</span><span class="p">(</span><span class="n">K</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="mi">1</span><span class="err">…</span><span class="n">n</span><span class="p">:</span>
+            <span class="n">μ_new</span><span class="p">[</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="err">←</span> <span class="n">μ_new</span><span class="p">[</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">+</span> <span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">counts</span><span class="p">[</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="err">←</span> <span class="n">counts</span><span class="p">[</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="mi">1</span><span class="err">…</span><span class="n">K</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">counts</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">μ_new</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="err">←</span> <span class="n">μ_new</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">/</span> <span class="n">counts</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">μ_new</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="err">←</span> <span class="n">μ</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>  <span class="c1"># 若簇空，可保持原中心或重新初始化</span>
+
+        <span class="c1"># 4) 收敛判定</span>
+        <span class="k">if</span> <span class="n">max_j</span> <span class="err">‖</span><span class="n">μ_new</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="err">−</span> <span class="n">μ</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="err">‖</span> <span class="o">&lt;</span> <span class="n">ε</span><span class="p">:</span>
+            <span class="k">break</span>
+
+        <span class="n">μ</span> <span class="err">←</span> <span class="n">μ_new</span>
+
+    <span class="k">return</span> <span class="n">c</span><span class="p">,</span> <span class="n">μ</span>
+</code></pre>
+</div>
+
+<ul>
+<li><p><strong>时间复杂度</strong></p>
+
+<ul>
+<li>每次迭代分配： <span class="math">O(n K d)</span></li>
+<li>更新簇心： <span class="math">O(n d)</span></li>
+<li>总计： (\displaystyle O(\text{max_iter}\times n K d))</li>
+</ul></li>
+<li><p><strong>注意事项</strong></p>
+
+<ul>
+<li>结果对初始化敏感，建议多次运行取最优；</li>
+<li>当数据分布复杂或簇数 <span class="math">K</span> 未知时，可结合肘部法则（Elbow Method）、轮廓系数（Silhouette）等方法选取 <span class="math">K</span>。</li>
+</ul></li>
+</ul>
+
+</article>
+</body>
+</html>

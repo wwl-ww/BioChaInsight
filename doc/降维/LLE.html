@@ -1,0 +1,213 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>LLE</title>
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css" rel="stylesheet"/>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: #ffffff;
+            color: #333;
+            max-width: 900px;
+            margin: auto;
+            padding: 2rem;
+        }
+        h1, h2, h3 {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.3em;
+            margin-top: 2em;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 1em;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: Consolas, Monaco, monospace;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['\(','\)']],
+    displayMath: [['$$','$$']]
+  },
+  options: {
+    renderActions: {
+      find_script_mathtex: [10, function (doc) {
+        for (const node of document.querySelectorAll('.math')) {
+          const math = node.textContent;
+          const script = document.createElement('script');
+          script.type = 'math/tex';
+          script.text = math;
+          node.replaceWith(script);
+        }
+      }, '']
+    }
+  }
+};
+</script>
+
+    <script id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+</head>
+<body>
+<article>
+<h1 id="lle">LLE</h1>
+
+<p><ul><li style="margin-left:0px"><a href="#lle">LLE</a></li>
+<li style="margin-left:20px"><a href="#1-算法介绍">1. 算法介绍</a></li>
+<li style="margin-left:20px"><a href="#2-公式及原理">2. 公式及原理</a></li>
+<li style="margin-left:20px"><a href="#3-伪代码">3. 伪代码</a></li></ul></p>
+
+<h2 id="1-算法介绍">1. 算法介绍</h2>
+
+<ul>
+<li><p><strong>背景与目标</strong>
+ 局部线性嵌入（LLE, Locally Linear Embedding）由 Roweis 和 Saul 于2000年提出，是一种基于流形学习的非线性降维方法。其核心目标是：</p>
+
+<blockquote>
+  <p>在低维空间中保留高维数据在局部邻域内的线性重构关系，从而揭示数据的内在低维流形结构。</p>
+</blockquote></li>
+<li><p><strong>应用场景</strong></p>
+
+<ul>
+<li>高维流形数据的可视化</li>
+<li>保留局部几何特征的降维预处理</li>
+<li>图像、文本、传感器时序等数据的非线性嵌入</li>
+</ul></li>
+<li><p><strong>核心思路</strong></p>
+
+<ol>
+<li><strong>局部邻域选择</strong>——对每个样本点 <span class="math">\mathbf{x}_i</span>，找到其在原空间中最接近的 <span class="math">k</span> 个邻居；</li>
+<li><strong>线性重构权重</strong>——在高维空间内，用邻居点的线性组合尽可能重构 <span class="math">\mathbf{x}_i</span>，求解最优权重矩阵 <span class="math">{W_{ij}}</span>；</li>
+<li><strong>全局嵌入</strong>——在低维空间中，保持相同的权重关系，求解所有低维嵌入点 <span class="math">{\mathbf{y}_i}</span>，使局部重构误差最小。</li>
+</ol></li>
+</ul>
+
+<hr />
+
+<h2 id="2-公式及原理">2. 公式及原理</h2>
+
+<p><strong>2.1 邻域与重构权重</strong>
+   对于每个高维样本 <span class="math">\mathbf{x}_i\in\mathbb{R}^d</span>：</p>
+
+<ol>
+<li>找到其 <span class="math">k</span> 个最近邻索引集合 <span class="math">N(i)</span>。</li>
+<li><p>求解线性重构权重 <span class="math">{W_{ij}}_{j\in N(i)}</span>，使下式最小：</p>
+
+<p>$$
+     \min_{W_{ij}}\;\bigl\|\mathbf{x}_i - \sum_{j\in N(i)} W_{ij}\,\mathbf{x}_j\bigr\|^2
+     \quad\text{s.t.}\;\sum_{j\in N(i)} W_{ij} = 1.
+   $$</p>
+
+<p>这是一组带和为1约束的最小二乘问题。常用拉格朗日乘子或直接对局部协方差矩阵求解：</p>
+
+<p>$$
+  C^{(i)}_{lm} = (\mathbf{x}_i - \mathbf{x}_l)^\top(\mathbf{x}_i - \mathbf{x}_m),
+  \quad l,m\in N(i),
+$$</p>
+
+<p>$$
+  W_{i,N(i)} = \frac{C^{(i)^{-1}}\mathbf{1}}{\mathbf{1}^\top C^{(i)^{-1}}\mathbf{1}}.
+$$</p>
+
+<p><strong>2.2 低维全局嵌入</strong>
+利用高维空间得到的同样权重，在低维 <span class="math">\mathbf{y}_i\in\mathbb{R}^m</span> 中重构误差：</p>
+
+<p>$$
+  \Phi(\mathbf{Y})
+  = \sum_{i=1}^n \Bigl\|\mathbf{y}_i - \sum_{j\in N(i)} W_{ij}\,\mathbf{y}_j\Bigr\|^2.
+$$</p>
+
+<p>展开可得二次型：</p>
+
+<p>$$
+  \Phi(\mathbf{Y})
+  = \mathrm{Tr}\bigl(\mathbf{Y}^\top \mathbf{M}\,\mathbf{Y}\bigr),
+  \quad
+  \mathbf{M} = (\mathbf{I}-\mathbf{W})^\top(\mathbf{I}-\mathbf{W}),
+$$</p>
+
+<p>其中 <span class="math">\mathbf{W}</span> 为 <span class="math">n\times n</span> 权重矩阵（非零项仅在邻域内）。最小化 <span class="math">\Phi</span> 等价于取矩阵 <span class="math">\mathbf{M}</span> 的最小特征值对应的特征向量。由于 <span class="math">\mathbf{M}\mathbf{1}=0</span>，其最小特征值为0，对应特征向量 <span class="math">\mathbf{1}</span>（平移不变性），舍去后取接下来的 <span class="math">m</span> 个最小特征向量，组成低维坐标矩阵 <span class="math">\mathbf{Y}\in\mathbb{R}^{n\times m}</span>。</p></li>
+</ol>
+
+<hr />
+
+<h2 id="3-伪代码">3. 伪代码</h2>
+
+<div class="codehilite">
+<pre><span></span><code><span class="c1"># 输入</span>
+<span class="c1">#   X: 原始数据矩阵，形状 (n, d)</span>
+<span class="c1">#   k: 每点邻居数</span>
+<span class="c1">#   m: 目标低维维度（m &lt; d）</span>
+<span class="c1"># 输出</span>
+<span class="c1">#   Y: 降维后数据，形状 (n, m)</span>
+
+<span class="n">function</span> <span class="n">LLE</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+    <span class="n">n</span><span class="p">,</span> <span class="n">d</span> <span class="err">←</span> <span class="n">shape</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+    <span class="c1"># 1) 找到每个点的 k 近邻（欧氏距离或其他度量）</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="mi">1</span><span class="err">…</span><span class="n">n</span><span class="p">:</span>
+        <span class="n">N</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="err">←</span> <span class="n">indices_of_k_nearest_neighbors</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">X</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+
+    <span class="c1"># 2) 计算重构权重 W</span>
+    <span class="n">W</span> <span class="err">←</span> <span class="n">zero_matrix</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="mi">1</span><span class="err">…</span><span class="n">n</span><span class="p">:</span>
+        <span class="c1"># 构造局部协方差矩阵 C^(i)</span>
+        <span class="n">C_i</span> <span class="err">←</span> <span class="n">zero_matrix</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="mi">1</span><span class="err">…</span><span class="n">k</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="mi">1</span><span class="err">…</span><span class="n">k</span><span class="p">:</span>
+            <span class="n">C_i</span><span class="p">[</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">]</span> <span class="err">←</span> <span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">X</span><span class="p">[</span><span class="n">N</span><span class="p">(</span><span class="n">i</span><span class="p">)[</span><span class="n">a</span><span class="p">]])</span> <span class="err">·</span> <span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">X</span><span class="p">[</span><span class="n">N</span><span class="p">(</span><span class="n">i</span><span class="p">)[</span><span class="n">b</span><span class="p">]])</span>
+        <span class="c1"># 加入小正则项以确保可逆</span>
+        <span class="n">C_i</span> <span class="err">←</span> <span class="n">C_i</span> <span class="o">+</span> <span class="n">ε</span> <span class="o">*</span> <span class="n">trace</span><span class="p">(</span><span class="n">C_i</span><span class="p">)</span> <span class="o">*</span> <span class="n">I_k</span>
+        <span class="c1"># 计算局部权重</span>
+        <span class="n">w_i</span> <span class="err">←</span> <span class="n">solve</span><span class="p">(</span><span class="n">C_i</span><span class="p">,</span> <span class="n">ones</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
+        <span class="n">w_i</span> <span class="err">←</span> <span class="n">w_i</span> <span class="o">/</span> <span class="nb">sum</span><span class="p">(</span><span class="n">w_i</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="mi">1</span><span class="err">…</span><span class="n">k</span><span class="p">:</span>
+            <span class="n">W</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">N</span><span class="p">(</span><span class="n">i</span><span class="p">)[</span><span class="n">idx</span><span class="p">]]</span> <span class="err">←</span> <span class="n">w_i</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+    <span class="c1"># 3) 构造矩阵 M = (I - W)&#39;(I - W)</span>
+    <span class="n">I</span> <span class="err">←</span> <span class="n">identity_matrix</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">M</span> <span class="err">←</span> <span class="p">(</span><span class="n">I</span> <span class="o">-</span> <span class="n">W</span><span class="p">)</span><span class="n">ᵀ</span> <span class="err">×</span> <span class="p">(</span><span class="n">I</span> <span class="o">-</span> <span class="n">W</span><span class="p">)</span>  <span class="c1"># M: (n, n)</span>
+
+    <span class="c1"># 4) 特征分解：取 M 的最小 m+1 个特征向量</span>
+    <span class="p">(</span><span class="n">eigvals</span><span class="p">,</span> <span class="n">eigvecs</span><span class="p">)</span> <span class="err">←</span> <span class="n">eigendecompose</span><span class="p">(</span><span class="n">M</span><span class="p">)</span>
+    <span class="c1"># 按特征值从小到大排序</span>
+    <span class="n">sort_indices</span> <span class="err">←</span> <span class="n">argsort</span><span class="p">(</span><span class="n">eigvals</span><span class="p">)</span>
+    <span class="c1"># 舍去第一个（对应特征值0的常数向量）</span>
+    <span class="n">selected</span> <span class="err">←</span> <span class="n">sort_indices</span><span class="p">[</span><span class="mi">2</span> <span class="p">:</span> <span class="n">m</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">Y</span> <span class="err">←</span> <span class="n">eigvecs</span><span class="p">[:,</span> <span class="n">selected</span><span class="p">]</span>  <span class="c1"># Y: (n, m)</span>
+
+    <span class="k">return</span> <span class="n">Y</span>
+</code></pre>
+</div>
+
+<ul>
+<li><p><strong>时间与内存复杂度</strong></p>
+
+<ul>
+<li>最近邻搜索：<span class="math">O(n^2 d)</span>（可用 KD-tree、球树等加速）</li>
+<li>局部最小二乘：<span class="math">n</span> 次求解 <span class="math">k\times k</span> 线性系统，总 <span class="math">O(n k^3)</span></li>
+<li>全局特征分解：对 <span class="math">n\times n</span> 矩阵，复杂度 <span class="math">O(n^3)</span>（可用 Lanczos 等稀疏方法加速）</li>
+</ul></li>
+<li><p><strong>注意事项</strong></p>
+
+<ul>
+<li>邻居数 <span class="math">k</span> 不宜过大或过小，经验上 <span class="math">k\in[5,50]</span>；</li>
+<li>正则项 <span class="math">\epsilon</span> 可防止协方差矩阵奇异；</li>
+<li>对大规模数据可采用近似算法或分批处理。</li>
+</ul></li>
+</ul>
+
+</article>
+</body>
+</html>

@@ -1,0 +1,177 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>fdr</title>
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css" rel="stylesheet"/>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: #ffffff;
+            color: #333;
+            max-width: 900px;
+            margin: auto;
+            padding: 2rem;
+        }
+        h1, h2, h3 {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.3em;
+            margin-top: 2em;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 1em;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: Consolas, Monaco, monospace;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['\(','\)']],
+    displayMath: [['$$','$$']]
+  },
+  options: {
+    renderActions: {
+      find_script_mathtex: [10, function (doc) {
+        for (const node of document.querySelectorAll('.math')) {
+          const math = node.textContent;
+          const script = document.createElement('script');
+          script.type = 'math/tex';
+          script.text = math;
+          node.replaceWith(script);
+        }
+      }, '']
+    }
+  }
+};
+</script>
+
+    <script id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+</head>
+<body>
+<article>
+<h1 id="fdr-校正">FDR 校正</h1>
+
+<p><ul><li style="margin-left:0px"><a href="#fdr-校正">FDR 校正</a></li>
+<li style="margin-left:20px"><a href="#1-算法介绍">1. 算法介绍</a></li>
+<li style="margin-left:20px"><a href="#2-公式及原理">2. 公式及原理</a></li>
+<li style="margin-left:20px"><a href="#3-伪代码">3. 伪代码</a></li></ul></p>
+
+<h2 id="1-算法介绍">1. 算法介绍</h2>
+
+<ul>
+<li><p><strong>背景与目标</strong>
+ 在基因表达差异分析中，我们通常对成千上万个基因分别进行统计检验（如 t-test、Wald 检验等），得到大量原始 p 值。直接以显著性水平 <span class="math">\alpha</span> 筛选会导致大量假阳性（Type I error）。</p>
+
+<blockquote>
+  <p>adjust_fdr（FDR 校正）旨在在多重假设检验场景下，控制<strong>假发现率</strong>（False Discovery Rate），即期望的假阳性结果占所有阳性结果的比例不超过给定阈值。</p>
+</blockquote></li>
+<li><p><strong>应用场景</strong></p>
+
+<ul>
+<li>RNA-seq、微阵列的全基因差异表达分析</li>
+<li>高通量蛋白质组、甲基化等组学数据中的多重检验校正</li>
+<li>任何成千上万并行假设检验的场景</li>
+</ul></li>
+<li><p><strong>核心思路</strong></p>
+
+<ol>
+<li><strong>排序原始 p 值</strong>——将 <span class="math">m</span> 个 p 值从小到大排序；</li>
+<li><strong>计算调整后阈值</strong>——根据排序位置和总检验数，为每个 p 值分配一个对应的 FDR 阈值；</li>
+<li><strong>反向修正</strong>——保证调整后 p 值单调不增；</li>
+<li><strong>选择显著基因</strong>——以调整后 p 值 <span class="math">\le</span> 预设 FDR（如 0.05）为显著。</li>
+</ol></li>
+</ul>
+
+<hr />
+
+<h2 id="2-公式及原理">2. 公式及原理</h2>
+
+<p>设对 <span class="math">m</span> 个基因检测得到原始 p 值集合 <span class="math">{p_1,\dots,p_m}</span>。</p>
+
+<ol>
+<li><p><strong>排序</strong>
+  将 p 值按升序排列，记排序后第 <span class="math">i</span> 小的 p 值为 <span class="math">p_{(i)}</span>。</p></li>
+<li><p><strong>Benjamini–Hochberg 校正</strong>
+  对每个排序后位置 <span class="math">i</span>，计算</p>
+
+<p>$$
+    q_{(i)} = \min!\Biggl(1,\;\frac{m}{i}\,p_{(i)}\Biggr).
+  $$</p></li>
+<li><p><strong>单调性修正</strong>
+  为保证调整后 p 值随着 <span class="math">i</span> 增加不降低，反向遍历：</p>
+
+<p>$$
+    \tilde{q}_{(i)} = \min!\bigl(q_{(i)},\,\tilde{q}_{(i+1)}\bigr),
+    \quad \tilde{q}_{(m)} = q_{(m)}.
+  $$</p></li>
+<li><p><strong>映射回原序</strong>
+  将 <span class="math">\tilde{q}_{(i)}</span> 对应回每个基因的原始索引，得到每个基因的 FDR 调整后 p 值。</p></li>
+</ol>
+
+<ul>
+<li><strong>假设条件</strong>
+Benjamini–Hochberg 方法在检验独立或正相关时能严格控制 FDR；若依赖结构未知，可视为保守估计。</li>
+</ul>
+
+<hr />
+
+<h2 id="3-伪代码">3. 伪代码</h2>
+
+<div class="codehilite">
+<pre><span></span><code><span class="c1"># 输入</span>
+<span class="c1">#   P: 原始 p 值列表，长度 m</span>
+<span class="c1"># 输出</span>
+<span class="c1">#   Q: 调整后（FDR 控制）p 值列表，长度 m</span>
+
+<span class="n">function</span> <span class="n">adjust_fdr</span><span class="p">(</span><span class="n">P</span><span class="p">):</span>
+    <span class="n">m</span> <span class="err">←</span> <span class="n">length</span><span class="p">(</span><span class="n">P</span><span class="p">)</span>
+    <span class="c1"># 1) 排序并记录原始索引</span>
+    <span class="n">order</span> <span class="err">←</span> <span class="n">argsort</span><span class="p">(</span><span class="n">P</span><span class="p">)</span>            <span class="c1"># 返回排序后索引列表，p[order[0]] 最小</span>
+    <span class="n">P_sorted</span> <span class="err">←</span> <span class="n">P</span><span class="p">[</span><span class="n">order</span><span class="p">]</span>
+
+    <span class="c1"># 2) 初步校正 q 值</span>
+    <span class="n">Q_sorted</span> <span class="err">←</span> <span class="n">array_of_length</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="mf">1.</span><span class="o">.</span><span class="n">m</span><span class="p">:</span>
+        <span class="n">Q_sorted</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="err">←</span> <span class="nb">min</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="n">m</span> <span class="o">/</span> <span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="n">P_sorted</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="c1"># 3) 单调性修正（反向遍历）</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">m</span><span class="err">−</span><span class="mi">1</span> <span class="n">down</span> <span class="n">to</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">Q_sorted</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="err">←</span> <span class="nb">min</span><span class="p">(</span><span class="n">Q_sorted</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">Q_sorted</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="c1"># 4) 映射回原序</span>
+    <span class="n">Q</span> <span class="err">←</span> <span class="n">array_of_length</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="mf">1.</span><span class="o">.</span><span class="n">m</span><span class="p">:</span>
+        <span class="n">original_idx</span> <span class="err">←</span> <span class="n">order</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="n">Q</span><span class="p">[</span><span class="n">original_idx</span><span class="p">]</span> <span class="err">←</span> <span class="n">Q_sorted</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">Q</span>
+</code></pre>
+</div>
+
+<ul>
+<li><strong>时间复杂度</strong>：主要在排序 <span class="math">O(m\log m)</span></li>
+<li><p><strong>注意事项</strong>：</p>
+
+<ul>
+<li>若要更严格控制（依赖结构复杂），可使用 Benjamini–Yekutieli 校正，调整 <span class="math">\frac{m}{i}</span> 部分；</li>
+<li>输出 Q 中，通常以 Q<span class="math">\le</span>0.05 判定差异表达基因；</li>
+<li>可配合其它多重检验方法（e.g. Bonferroni）做补充对比，或结合先验信息做基因集富集分析。</li>
+</ul></li>
+</ul>
+
+</article>
+</body>
+</html>

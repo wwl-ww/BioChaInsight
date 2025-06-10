@@ -1,0 +1,218 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Smith-Waterman</title>
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css" rel="stylesheet"/>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: #ffffff;
+            color: #333;
+            max-width: 900px;
+            margin: auto;
+            padding: 2rem;
+        }
+        h1, h2, h3 {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.3em;
+            margin-top: 2em;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 1em;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: Consolas, Monaco, monospace;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['\(','\)']],
+    displayMath: [['$$','$$']]
+  },
+  options: {
+    renderActions: {
+      find_script_mathtex: [10, function (doc) {
+        for (const node of document.querySelectorAll('.math')) {
+          const math = node.textContent;
+          const script = document.createElement('script');
+          script.type = 'math/tex';
+          script.text = math;
+          node.replaceWith(script);
+        }
+      }, '']
+    }
+  }
+};
+</script>
+
+    <script id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+</head>
+<body>
+<article>
+<h1 id="smith-waterman">Smith-Waterman</h1>
+
+<p><ul><li style="margin-left:0px"><a href="#smith-waterman">Smith-Waterman</a></li>
+<li style="margin-left:20px"><a href="#1-算法介绍">1. 算法介绍</a></li>
+<li style="margin-left:20px"><a href="#2-公式及原理">2. 公式及原理</a></li>
+<li style="margin-left:20px"><a href="#3-伪代码">3. 伪代码</a></li></ul></p>
+
+<h2 id="1-算法介绍">1. 算法介绍</h2>
+
+<ul>
+<li><p><strong>背景与目标</strong>
+ Smith–Waterman 算法由 Temple F. Smith 和 Michael S. Waterman 于1981年提出，是用于生物序列（如蛋白质或 DNA）的<strong>局部比对</strong>（local alignment）经典动态规划方法。其核心目标是：</p>
+
+<blockquote>
+  <p>在允许插入、缺失（gap）和错配的情况下，找到两条序列中得分最高的局部片段比对。</p>
+</blockquote></li>
+<li><p><strong>应用场景</strong></p>
+
+<ul>
+<li>在长序列中发现高度相似的局部区域（例如功能域、保守motif）</li>
+<li>数据库搜索时比对查询序列与目标序列的最佳匹配子串</li>
+<li>模式识别与结构功能预测中局部相似性分析</li>
+</ul></li>
+<li><p><strong>核心思路</strong></p>
+
+<ol>
+<li><strong>矩阵初始化</strong>——大小为 <span class="math">(m+1)\times(n+1)</span> 的得分矩阵 <span class="math">H</span>，首行和首列均置 0；</li>
+<li><p><strong>递推填表</strong>——对每个位置 <span class="math">(i,j)</span> 计算：</p>
+
+<ul>
+<li>对齐 <span class="math">a_i</span> 与 <span class="math">b_j</span>（match/mismatch）</li>
+<li>在 <span class="math">A</span> 中插入 gap</li>
+<li>在 <span class="math">B</span> 中插入 gap</li>
+<li>或者不延续比对（得分置 0，终止局部比对）</li>
+</ul></li>
+<li><strong>寻找最优</strong>——记录矩阵中的最大值及其坐标 <span class="math">(i^<em>,j^</em>)</span>；</li>
+<li><strong>回溯</strong>——从 <span class="math">(i^<em>,j^</em>)</span> 开始，根据递推来源回溯，直到遇到得分 0，获得局部最优对齐片段。</li>
+</ol></li>
+</ul>
+
+<hr />
+
+<h2 id="2-公式及原理">2. 公式及原理</h2>
+
+<p><strong>2.1 符号与评分</strong></p>
+
+<ul>
+<li>序列 <span class="math">\mathbf{A}=a_1a_2\cdots a_m</span>，<span class="math">\mathbf{B}=b_1b_2\cdots b_n</span>。</li>
+<li><p>匹配／错配得分函数 <span class="math">s(a_i,b_j)</span>，常见如 BLOSUM 或简单的：</p>
+
+<p>$$
+   s(a_i,b_j)=
+   \begin{cases}
+     +\alpha, &amp; a_i=b_j,\
+     -\beta,  &amp; a_i\neq b_j.
+   \end{cases}
+ $$</p></li>
+<li><p>线性 gap penalty <span class="math">d>0</span>。</p>
+
+<p><strong>2.2 初始化</strong></p>
+
+<p>$$
+  H[i,0]=0,\quad H[0,j]=0,\quad \forall\,0\le i\le m,\,0\le j\le n.
+$$</p>
+
+<p><strong>2.3 递推公式</strong>
+对任意 <span class="math">1\le i\le m</span>, <span class="math">1\le j\le n</span>：</p>
+
+<p>$$
+  H[i,j]
+  = \max!\begin{cases}
+    0,\
+    H[i-1,j-1] + s(a_i,b_j),\
+    H[i-1,j]   - d,\
+    H[i,j-1]   - d.
+  \end{cases}
+$$</p></li>
+<li><p>其中，<span class="math">\max{0,\dots}</span> 保证局部比对在得分为负时重置为 0，从而支持局部对齐。</p></li>
+<li><p>最大值 <span class="math">\max_{i,j}H[i,j]</span> 对应最优局部对齐结束位置。</p>
+
+<p><strong>2.4 回溯（Traceback）</strong>
+从得分最高的 <span class="math">(i^<em>,j^</em>)</span> 出发，按下列优先顺序回溯：</p></li>
+</ul>
+
+<ol>
+<li>如果 <span class="math">H[i^<em>,j^</em>] = H[i^<em>-1,j^</em>-1] + s(a_{i^*},b_{j^<em>})</span>，对齐 <span class="math">a_{i^</em>}</span> 与 <span class="math">b_{j^*}</span>；</li>
+<li>否则如果 <span class="math">H[i^<em>,j^</em>] = H[i^<em>-1,j^</em>] - d</span>，对齐 <span class="math">a_{i^*}</span> 与 gap；</li>
+<li>否则对齐 gap 与 <span class="math">b_{j^*}</span>；
+重复直到遇到 <span class="math">H[i,j]=0</span>，此点即局部比对起点。</li>
+</ol>
+
+<hr />
+
+<h2 id="3-伪代码">3. 伪代码</h2>
+
+<div class="codehilite">
+<pre><span></span><code><span class="c1"># 输入</span>
+<span class="c1">#   A[1..m], B[1..n]: 待比对序列</span>
+<span class="c1">#   s(a,b): 匹配得分函数</span>
+<span class="c1">#   d: 线性 gap penalty</span>
+<span class="c1"># 输出</span>
+<span class="c1">#   aligned_A, aligned_B: 局部比对结果</span>
+
+<span class="n">function</span> <span class="n">SmithWaterman</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+    <span class="n">m</span> <span class="err">←</span> <span class="n">length</span><span class="p">(</span><span class="n">A</span><span class="p">);</span> <span class="n">n</span> <span class="err">←</span> <span class="n">length</span><span class="p">(</span><span class="n">B</span><span class="p">)</span>
+
+    <span class="c1"># 1) 初始化矩阵 H (m+1)x(n+1)，并记录最大得分位置</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="mf">0.</span><span class="o">.</span><span class="n">m</span><span class="p">:</span>
+        <span class="n">H</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="err">←</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="mf">0.</span><span class="o">.</span><span class="n">n</span><span class="p">:</span>
+        <span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="err">←</span> <span class="mi">0</span>
+    <span class="n">max_score</span> <span class="err">←</span> <span class="mi">0</span>
+    <span class="p">(</span><span class="n">end_i</span><span class="p">,</span> <span class="n">end_j</span><span class="p">)</span> <span class="err">←</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># 2) 填表并追踪最大值</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="mf">1.</span><span class="o">.</span><span class="n">m</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="mf">1.</span><span class="o">.</span><span class="n">n</span><span class="p">:</span>
+            <span class="k">match</span> <span class="err">←</span> <span class="n">H</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">s</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">B</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+            <span class="n">delete</span> <span class="err">←</span> <span class="n">H</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>   <span class="o">-</span> <span class="n">d</span>
+            <span class="n">insert</span> <span class="err">←</span> <span class="n">H</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>   <span class="o">-</span> <span class="n">d</span>
+            <span class="n">H</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="err">←</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">match</span><span class="p">,</span> <span class="n">delete</span><span class="p">,</span> <span class="n">insert</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">H</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">max_score</span><span class="p">:</span>
+                <span class="n">max_score</span> <span class="err">←</span> <span class="n">H</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>
+                <span class="p">(</span><span class="n">end_i</span><span class="p">,</span> <span class="n">end_j</span><span class="p">)</span> <span class="err">←</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+
+    <span class="c1"># 3) 回溯还原局部比对</span>
+    <span class="n">aligned_A</span><span class="p">,</span> <span class="n">aligned_B</span> <span class="err">←</span> <span class="n">empty</span> <span class="n">strings</span>
+    <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="err">←</span> <span class="n">end_i</span><span class="p">,</span> <span class="n">end_j</span>
+    <span class="k">while</span> <span class="n">i</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">j</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">H</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">H</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">H</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">s</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">B</span><span class="p">[</span><span class="n">j</span><span class="p">]):</span>
+            <span class="n">aligned_A</span><span class="o">.</span><span class="n">prepend</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">aligned_B</span><span class="o">.</span><span class="n">prepend</span><span class="p">(</span><span class="n">B</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+            <span class="n">i</span> <span class="err">←</span> <span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">;</span> <span class="n">j</span> <span class="err">←</span> <span class="n">j</span><span class="o">-</span><span class="mi">1</span>
+        <span class="k">else</span> <span class="k">if</span> <span class="n">H</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">H</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">d</span><span class="p">:</span>
+            <span class="n">aligned_A</span><span class="o">.</span><span class="n">prepend</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">aligned_B</span><span class="o">.</span><span class="n">prepend</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)</span>
+            <span class="n">i</span> <span class="err">←</span> <span class="n">i</span><span class="o">-</span><span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">aligned_A</span><span class="o">.</span><span class="n">prepend</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)</span>
+            <span class="n">aligned_B</span><span class="o">.</span><span class="n">prepend</span><span class="p">(</span><span class="n">B</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+            <span class="n">j</span> <span class="err">←</span> <span class="n">j</span><span class="o">-</span><span class="mi">1</span>
+
+    <span class="k">return</span> <span class="n">aligned_A</span><span class="p">,</span> <span class="n">aligned_B</span>
+</code></pre>
+</div>
+
+<ul>
+<li><strong>时间复杂度</strong>：<span class="math">O(m \times n)</span></li>
+<li><strong>空间复杂度</strong>：<span class="math">O(m \times n)</span>（可用带回溯链的优化或分块策略略减内存）</li>
+</ul>
+
+</article>
+</body>
+</html>
