@@ -354,12 +354,7 @@ void GenePlot::plot_heatmap(
 		}
 	}
 
-	// 1. 初始化 Python 解释器（如果还没初始化）
-	if (!Py_IsInitialized()) {
-		Py_Initialize();
-	}
-
-	// 2. 构造一个 Python 嵌套列表 pyMatrix，等下用 numpy.array(pyMatrix)
+	// 构造一个 Python 嵌套列表 pyMatrix，等下用 numpy.array(pyMatrix)
 	PyObject* pyMatrix = PyList_New(rows);
 	if (!pyMatrix) {
 		PyErr_Print();
@@ -386,7 +381,7 @@ void GenePlot::plot_heatmap(
 		PyList_SetItem(pyMatrix, i, pyRow);  // 收走 pyRow
 	}
 
-	// 3. 导入 numpy 和 matplotlib.pyplot
+	// numpy 和 matplotlib.pyplot
 	PyObject* numpyMod = PyImport_ImportModule("numpy");
 	if (!numpyMod) {
 		PyErr_Print();
@@ -401,7 +396,6 @@ void GenePlot::plot_heatmap(
 		throw std::runtime_error("Failed to import matplotlib.pyplot.");
 	}
 
-	// 4. 把 Python 嵌套列表转换成 numpy.ndarray：arr = numpy.array(pyMatrix)
 	PyObject* arrayFunc = PyObject_GetAttrString(numpyMod, "array");
 	if (!arrayFunc) {
 		PyErr_Print();
@@ -422,7 +416,6 @@ void GenePlot::plot_heatmap(
 		throw std::runtime_error("Failed to call numpy.array.");
 	}
 
-	// 5. 设定图形大小：plt.figure(figsize=(width/100.0, height/100.0))
 	PyObject* figureFunc = PyObject_GetAttrString(pltMod, "figure");
 	if (!figureFunc) {
 		PyErr_Print();
@@ -454,7 +447,6 @@ void GenePlot::plot_heatmap(
 	}
 	Py_DECREF(figRes);
 
-	// 6. 调用 im = plt.imshow(npArray, cmap='PiYG', aspect='auto')
 	PyObject* imshowFunc = PyObject_GetAttrString(pltMod, "imshow");
 	if (!imshowFunc) {
 		PyErr_Print();
@@ -463,11 +455,9 @@ void GenePlot::plot_heatmap(
 		Py_DECREF(numpyMod);
 		throw std::runtime_error("Failed to get matplotlib.pyplot.imshow.");
 	}
-	// 准备关键字参数：{'cmap':'PiYG', 'aspect':'auto'}
 	PyObject* kwIm = PyDict_New();
 	PyDict_SetItemString(kwIm, "cmap", PyUnicode_FromString("PiYG"));
 	PyDict_SetItemString(kwIm, "aspect", PyUnicode_FromString("auto"));
-	// 调用 imshow
 	PyObject* argsIm = PyTuple_Pack(1, npArray);
 	PyObject* imRes = PyObject_Call(imshowFunc, argsIm, kwIm);
 	Py_DECREF(argsIm);
@@ -481,7 +471,6 @@ void GenePlot::plot_heatmap(
 		throw std::runtime_error("plt.imshow call failed.");
 	}
 
-	// 7. 如果需要 colorbar，则 plt.colorbar(imRes)
 	if (show_colorbar) {
 		PyObject* colorbarFunc = PyObject_GetAttrString(pltMod, "colorbar");
 		if (!colorbarFunc) {
@@ -506,7 +495,6 @@ void GenePlot::plot_heatmap(
 	}
 	Py_DECREF(imRes);
 
-	// 8. plt.title("Heatmap")
 	PyObject* titleFunc = PyObject_GetAttrString(pltMod, "title");
 	if (!titleFunc) {
 		PyErr_Print();
@@ -528,7 +516,6 @@ void GenePlot::plot_heatmap(
 	}
 	Py_DECREF(titleRes);
 
-	// 9. plt.show()
 	PyObject* showFunc = PyObject_GetAttrString(pltMod, "show");
 	if (!showFunc) {
 		PyErr_Print();
@@ -546,7 +533,6 @@ void GenePlot::plot_heatmap(
 	}
 	Py_DECREF(showRes);
 
-	// 10. 清理
 	Py_DECREF(pltMod);
 	Py_DECREF(numpyMod);
 }
